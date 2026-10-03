@@ -1,7 +1,11 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+// Rutas accesibles sin sesión
+const PUBLIC_PATHS = ["/login", "/auth"];
+
 // Refresca el token de sesión en cada petición (patrón oficial de Supabase)
+// y protege las rutas privadas.
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -29,8 +33,24 @@ export async function updateSession(request: NextRequest) {
 
   // No pongas código entre createServerClient y getClaims():
   // puede provocar cierres de sesión aleatorios.
-  await supabase.auth.getClaims();
+  const { data } = await supabase.auth.getClaims();
+  const isLoggedIn = !!data?.claims;
 
-  // En el Paso 2 aquí redirigiremos a /login si no hay sesión.
+  const path = request.nextUrl.pathname;
+  const isPublic = PUBLIC_PATHS.some((p) => path === p || path.startsWith(`${p}/`));
+
+  if (!isLoggedIn && !isPublic) return redirectTo(request, "/login", supabaseResponse);
+  if (isLoggedIn && path === "/login") return redirectTo(request, "/today", supabaseResponse);
+
   return supabaseResponse;
+}
+
+// Redirige conservando las cookies de sesión recién refrescadas
+function redirectTo(request: NextRequest, pathname: string, from: NextResponse) {
+  const url = request.nextUrl.clone();
+  url.pathname = pathname;
+  url.search = "";
+  const response = NextResponse.redirect(url);
+  from.cookies.getAll().forEach((cookie) => response.cookies.set(cookie));
+  return response;
 }

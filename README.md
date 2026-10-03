@@ -23,12 +23,11 @@ npm install -D typescript @types/node @types/react @types/react-dom tailwindcss 
 ### 2. Crear el proyecto en Supabase
 1. https://supabase.com/dashboard → **New project** → nombre `ascendhabit`, región **East US (North Virginia)**, la más cercana a Colombia. Guarda la contraseña de la base de datos.
 2. **Project Settings → API Keys**: copia la *Project URL* y la *Publishable key*.
-3. Crea tu archivo de entorno:
+3. En la raíz del proyecto crea un archivo llamado **`.env.local`** con este contenido (Git lo ignora, así que tus claves no se suben):
    ```bash
-   copy .env.local.example .env.local     # Windows
-   # cp .env.local.example .env.local     # Mac/Linux
+   NEXT_PUBLIC_SUPABASE_URL=https://TU-PROYECTO.supabase.co
+   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_xxxxxxxxxxxxxxxx
    ```
-   y pega ahí los dos valores.
 
 ### 3. Aplicar la migración (elige una opción)
 
@@ -76,6 +75,38 @@ Abre http://localhost:3000. Debe aparecer un punto **verde** con el texto
 
 ---
 
+## Paso 2 · Login y pantalla "Hoy"
+
+### Qué incluye
+- **Login sin contraseña con código de 6 dígitos por email.** Funciona dentro de la app instalada en el iPhone; un enlace abriría Safari y la sesión no llegaría a la app.
+- **Rutas protegidas:** sin sesión → `/login`; con sesión, `/login` → `/today`.
+- **Pantalla Hoy:** % del día, racha de Día Perfecto, hábitos agrupados por Mañana / Tarde / Noche, botón ✓ o `+N` y hoja de detalle para ajustar cantidades. Los cambios se ven al instante (actualización optimista).
+- **Crear hábito:** desde una de las 7 plantillas o a medida (Sí/No, cantidad o tiempo; diario, días concretos o X por semana; prioridad, categoría y visibilidad para el socio).
+- **Ajustes:** nombre, zona horaria y cerrar sesión. **Socio:** muestra tu código (el panel llega en el Paso 3).
+
+### Configuración en Supabase (una sola vez)
+1. **SQL Editor** → ejecuta `supabase/migrations/20261003000001_today_screen.sql`
+   (o `npx supabase db push` si usas la CLI).
+2. **Authentication → Emails → Templates**: en **Magic Link** y en **Confirm signup**, pega
+   `supabase/templates/codigo-acceso.html`. Asunto sugerido: `Tu código de AscendHabit: {{ .Token }}`
+3. **Authentication → URL Configuration**: confirma que *Site URL* es `https://ascendhabit.vercel.app`.
+
+> El servicio de email incluido en Supabase es para pruebas y envía muy pocos correos por hora.
+> Para dos usuarios es suficiente porque la sesión dura semanas. Si llegan a ese límite, se configura
+> un SMTP propio (por ejemplo, Resend) en *Authentication → Emails → SMTP Settings*.
+
+### Probar
+```bash
+npm run dev
+```
+Entra con tu email, crea 2 o 3 hábitos y márcalos. Luego `git add . && git commit -m "Paso 2: login y pantalla Hoy" && git push`
+y Vercel lo despliega solo.
+
+### Instalar en el iPhone
+Safari → `ascendhabit.vercel.app` → botón Compartir → **Añadir a pantalla de inicio**.
+
+---
+
 ## Estructura
 
 ```
@@ -90,6 +121,8 @@ public/icons/          Iconos de la app (provisionales)
 
 | Función | Uso |
 |---|---|
+| `get_today()` | Todo lo de la pantalla Hoy en una llamada |
+| `log_habit(p_habit_id, p_value)` | Fija el progreso de HOY (fecha calculada en el servidor) |
 | `get_my_summary()` | % de hoy y de la semana, racha de Día Perfecto y hábitos con sus rachas |
 | `get_my_habit_streaks()` | Racha actual y mejor racha de cada hábito |
 | `get_partner_summary()` | Panel de accountability (solo agregados + hábitos compartidos) |

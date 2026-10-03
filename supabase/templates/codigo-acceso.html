@@ -1,0 +1,17 @@
+<!--
+  Plantilla de email para AscendHabit.
+  Pégala en Supabase → Authentication → Emails → Templates, en DOS plantillas:
+    · "Magic Link"     (usuarios que ya existen)
+    · "Confirm signup" (primera vez que alguien entra)
+  Asunto sugerido: Tu código de AscendHabit: {{ .Token }}
+-->
+<div style="font-family: -apple-system, Segoe UI, Roboto, sans-serif; max-width: 420px; margin: 0 auto; padding: 24px; color: #18181b;">
+  <h2 style="margin: 0 0 8px;">Tu código de acceso</h2>
+  <p style="margin: 0 0 20px; color: #52525b;">Escríbelo en AscendHabit para entrar:</p>
+  <p style="font-size: 34px; font-weight: 700; letter-spacing: 8px; margin: 0 0 24px; font-family: ui-monospace, Menlo, monospace;">{{ .Token }}</p>
+  <p style="margin: 0 0 8px; color: #52525b; font-size: 14px;">
+    ¿Estás en el ordenador? También puedes
+    <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email" style="color: #4f46e5;">entrar con este enlace</a>.
+  </p>
+  <p style="margin: 24px 0 0; color: #a1a1aa; font-size: 12px;">Si no pediste este código, ignora este correo.</p>
+</div>

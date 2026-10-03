@@ -1,0 +1,25 @@
+# dependencias
+/node_modules
+/.pnp
+.pnp.*
+
+# build
+/.next/
+/out/
+/build
+*.tsbuildinfo
+next-env.d.ts
+
+# entorno (¡nunca subir claves!)
+.env
+.env*.local
+
+# varios
+.DS_Store
+*.pem
+npm-debug.log*
+.vercel
+
+# supabase local
+supabase/.branches
+supabase/.temp

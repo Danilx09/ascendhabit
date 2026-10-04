@@ -34,58 +34,43 @@ export function HabitActions({ habitId, archived }: { habitId: string; archived:
   }
 
   return (
-    <section className="space-y-2">
+    <section className="space-y-3 border-t border-line pt-8">
       {!archived && (
-        <Link
-          href={`/habits/${habitId}/edit`}
-          className="block w-full rounded-xl bg-brand-600 py-3 text-center font-semibold text-white"
-        >
+        <Link href={`/habits/${habitId}/edit`} className="btn btn-primary w-full">
           Editar hábito
         </Link>
       )}
-      <button
-        type="button"
-        onClick={toggleArchive}
-        disabled={busy}
-        className="w-full rounded-xl border border-zinc-300 py-3 font-medium disabled:opacity-50 dark:border-zinc-700"
-      >
-        {archived ? "Restaurar (empieza de nuevo hoy)" : "Archivar"}
+      <button type="button" onClick={toggleArchive} disabled={busy} className="btn btn-ghost w-full">
+        {archived ? "Restaurar · empieza de nuevo hoy" : "Archivar"}
       </button>
       {!archived && (
-        <p className="px-1 text-xs text-zinc-500">
-          Archivar lo saca de Hoy sin perder el historial. Si lo restauras, la racha empieza desde ese día.
+        <p className="text-center text-xs text-ink-3">
+          Archivar lo saca de Hoy sin perder el historial. Al restaurarlo, la racha empieza ese día.
         </p>
       )}
 
       {!confirmDelete ? (
-        <button type="button" onClick={() => setConfirmDelete(true)} className="w-full py-2 text-sm text-red-500">
+        <button
+          type="button"
+          onClick={() => setConfirmDelete(true)}
+          className="block w-full pt-4 text-center text-sm text-ink-3 underline underline-offset-4"
+        >
           Eliminar hábito
         </button>
       ) : (
-        <div className="rounded-2xl border border-red-500/30 p-4">
-          <p className="text-sm">
-            Se borrarán el hábito, todo su historial y sus solicitudes de rescate. Esto no se puede deshacer.
-          </p>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => setConfirmDelete(false)}
-              className="rounded-xl border border-zinc-300 py-2 text-sm dark:border-zinc-700"
-            >
+        <div className="border border-ink p-4">
+          <p className="text-sm">Se borrarán el hábito, todo su historial y sus rescates. No se puede deshacer.</p>
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <button type="button" onClick={() => setConfirmDelete(false)} className="btn btn-ghost">
               Cancelar
             </button>
-            <button
-              type="button"
-              onClick={remove}
-              disabled={busy}
-              className="rounded-xl bg-red-500 py-2 text-sm font-semibold text-white disabled:opacity-50"
-            >
-              Eliminar para siempre
+            <button type="button" onClick={remove} disabled={busy} className="btn btn-primary">
+              Eliminar
             </button>
           </div>
         </div>
       )}
-      {error && <p className="text-sm text-red-500">{error}</p>}
+      {error && <p className="border-l-2 border-ink pl-3 text-sm">{error}</p>}
     </section>
   );
 }

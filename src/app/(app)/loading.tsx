@@ -1,16 +1,17 @@
 export default function Loading() {
   return (
-    <div className="animate-pulse space-y-6" aria-busy="true" aria-label="Cargando">
-      <div className="flex items-center justify-between">
-        <div className="space-y-2">
-          <div className="h-4 w-32 rounded bg-zinc-200 dark:bg-zinc-800" />
-          <div className="h-7 w-48 rounded bg-zinc-200 dark:bg-zinc-800" />
-        </div>
-        <div className="h-[76px] w-[76px] rounded-full bg-zinc-200 dark:bg-zinc-800" />
+    <div className="animate-pulse space-y-10" aria-busy="true" aria-label="Cargando">
+      <div className="space-y-3">
+        <div className="h-3 w-32 bg-surface" />
+        <div className="h-9 w-56 bg-surface" />
       </div>
-      <div className="h-16 rounded-2xl bg-zinc-200 dark:bg-zinc-800" />
-      {[0, 1, 2].map((i) => (
-        <div key={i} className="h-[68px] rounded-2xl bg-zinc-200 dark:bg-zinc-800" />
+      <div className="h-px w-full bg-line" />
+      {[0, 1, 2, 3].map((i) => (
+        <div key={i} className="flex items-center gap-4">
+          <div className="h-6 w-6 rounded-full bg-surface" />
+          <div className="h-4 flex-1 bg-surface" />
+          <div className="h-10 w-10 rounded-full bg-surface" />
+        </div>
       ))}
     </div>
   );

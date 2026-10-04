@@ -19,16 +19,12 @@ export default async function EditHabitPage({ params }: { params: Promise<{ id: 
   if (categories.error) throw new Error(categories.error.message);
 
   return (
-    <div className="space-y-6">
-      <Link href={`/habits/${id}`} className="text-sm text-zinc-500">
-        ‹ Volver
+    <div className="space-y-8">
+      <Link href={`/habits/${id}`} className="text-sm text-ink-3">
+        ← Volver
       </Link>
-      <h1 className="text-2xl font-bold tracking-tight">Editar hábito</h1>
-      <HabitForm
-        templates={[]}
-        categories={(categories.data ?? []) as Category[]}
-        initial={habit.data as HabitRow}
-      />
+      <h1 className="font-serif text-4xl tracking-tight">Editar hábito</h1>
+      <HabitForm templates={[]} categories={(categories.data ?? []) as Category[]} initial={habit.data as HabitRow} />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { HabitForm } from "@/components/habits/HabitForm";
 import type { Category, HabitTemplate } from "@/types/app";
@@ -15,8 +16,11 @@ export default async function NewHabitPage() {
   if (categories.error) throw new Error(categories.error.message);
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight">Nuevo hábito</h1>
+    <div className="space-y-8">
+      <Link href="/habits" className="text-sm text-ink-3">
+        ← Hábitos
+      </Link>
+      <h1 className="font-serif text-4xl tracking-tight">Nuevo hábito</h1>
       <HabitForm
         templates={(templates.data ?? []) as HabitTemplate[]}
         categories={(categories.data ?? []) as Category[]}

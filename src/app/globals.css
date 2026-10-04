@@ -1,33 +1,140 @@
 @import "tailwindcss";
 
-@theme {
-  --color-brand-50: #eef2ff;
-  --color-brand-500: #6366f1;
-  --color-brand-600: #4f46e5;
-  --color-brand-900: #1e1b4b;
-}
+/* El modo oscuro lo decide el atributo data-theme (lo pone el script del <head>) */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
+/* ------------------------------------------------------------------
+   Tokens · estricto blanco y negro
+   bg      fondo de página
+   surface relleno sutil (hover, chips activos, pistas de progreso)
+   ink     texto principal y marcas "llenas"
+   ink-2   texto secundario
+   ink-3   texto apagado, etiquetas
+   line    bordes ultrafinos
+   ------------------------------------------------------------------ */
 :root {
-  --background: #fafafa;
-  --foreground: #18181b;
+  --bg: #ffffff;
+  --surface: #f4f4f4;
+  --ink: #0a0a0a;
+  --ink-2: #4a4a4a;
+  --ink-3: #8c8c8c;
+  --line: #e4e4e4;
+  color-scheme: light;
 }
 
+[data-theme="dark"] {
+  --bg: #0a0a0a;
+  --surface: #161616;
+  --ink: #f2f2f2;
+  --ink-2: #b0b0b0;
+  --ink-3: #6e6e6e;
+  --line: #262626;
+  color-scheme: dark;
+}
+
+/* Sin JavaScript: seguir al sistema */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #09090b;
-    --foreground: #fafafa;
+  :root:not([data-theme]) {
+    --bg: #0a0a0a;
+    --surface: #161616;
+    --ink: #f2f2f2;
+    --ink-2: #b0b0b0;
+    --ink-3: #6e6e6e;
+    --line: #262626;
+    color-scheme: dark;
   }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-line: var(--line);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-newsreader), ui-serif, Georgia, serif;
 }
 
 html,
 body {
-  background: var(--background);
-  color: var(--foreground);
-  /* evita el rebote y el resaltado azul al tocar en iOS */
+  background: var(--bg);
+  color: var(--ink);
   overscroll-behavior-y: none;
   -webkit-tap-highlight-color: transparent;
+  font-feature-settings: "ss01", "cv11";
+}
+
+::selection {
+  background: var(--ink);
+  color: var(--bg);
 }
 
 /* Respeta el notch y la barra de inicio del iPhone */
 .safe-top    { padding-top: env(safe-area-inset-top); }
 .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+
+/* ------------------------------------------------------------------
+   Piezas reutilizables
+   ------------------------------------------------------------------ */
+@utility eyebrow {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+@utility btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0 1.25rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: transform 0.1s ease, opacity 0.15s ease, background-color 0.15s ease;
+  &:active { transform: scale(0.98); }
+  &:disabled { opacity: 0.35; pointer-events: none; }
+}
+
+@utility btn-primary {
+  background: var(--ink);
+  color: var(--bg);
+}
+
+@utility btn-ghost {
+  border: 1px solid var(--line);
+  color: var(--ink);
+  &:hover { border-color: var(--ink-3); }
+}
+
+/* Campo tipo libreta: solo una línea inferior */
+@utility field {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  padding: 0.65rem 0;
+  font-size: 1rem;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.15s ease;
+  &:focus { border-bottom-color: var(--ink); }
+  &::placeholder { color: var(--ink-3); }
+}
+
+/* Los emoji se ven en escala de grises para no romper la paleta */
+@utility mono {
+  filter: grayscale(1);
+}
+
+/* Papel pautado para el diario */
+@utility ruled {
+  background-image: linear-gradient(to bottom, transparent calc(2rem - 1px), var(--line) calc(2rem - 1px));
+  background-size: 100% 2rem;
+  line-height: 2rem;
+}

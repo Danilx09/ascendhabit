@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { formatLongDate, greeting } from "@/lib/dates";
 import { TIME_OF_DAY_LABEL, withValue } from "@/lib/habits";
-import { ProgressRing } from "@/components/ui/ProgressRing";
 import { HabitCard } from "./HabitCard";
 import { ProgressSheet } from "./ProgressSheet";
 import { RecoveryBanner } from "./RecoveryBanner";
@@ -28,8 +27,7 @@ export function TodayView({ data, misses }: { data: TodayData; misses: Recoverab
   );
   const [sheetId, setSheetId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  // El saludo depende de la hora local: se calcula en el navegador para no
-  // chocar con el render del servidor (que corre en UTC).
+  // El saludo depende de la hora local: se calcula en el navegador
   const [hello, setHello] = useState("Hola");
   useEffect(() => setHello(greeting()), []);
 
@@ -39,110 +37,94 @@ export function TodayView({ data, misses }: { data: TodayData; misses: Recoverab
       applyOptimistic({ id, value });
       const { error } = await supabase.rpc("log_habit", { p_habit_id: id, p_value: value });
       if (error) setError(error.message);
-      router.refresh(); // recalcula rachas y Día Perfecto en el servidor
+      router.refresh();
     });
   }
 
-  // Progreso del día: hábitos con día fijo programados hoy (igual que el servidor)
   const daily = habits.filter((h) => h.frequency_type !== "times_per_week" && h.scheduled_today);
   const doneCount = daily.filter((h) => h.done_today).length;
   const pct = daily.length ? Math.round((100 * doneCount) / daily.length) : 0;
   const allDone = daily.length > 0 && doneCount === daily.length;
+  const left = daily.length - doneCount;
 
   const active = habits.filter((h) => h.scheduled_today);
   const notToday = habits.filter((h) => !h.scheduled_today);
   const sheetHabit = habits.find((h) => h.id === sheetId) ?? null;
 
   return (
-    <div className="space-y-6">
-      {/* Cabecera / check-in del día */}
-      <header className="flex items-center justify-between gap-4">
-        <div className="min-w-0">
-          <p className="text-sm text-zinc-500">{formatLongDate(data.today)}</p>
-          <h1 className="truncate text-2xl font-bold tracking-tight">
-            {hello}
-            {data.display_name ? `, ${data.display_name}` : ""}
-          </h1>
-          <p className="mt-1 text-sm text-zinc-500">
-            {daily.length === 0
-              ? habits.length === 0
-                ? "Empieza creando tu primer hábito."
-                : "Hoy no tienes hábitos con día fijo."
-              : allDone
-                ? "¡Día perfecto! 🎉"
-                : `Te ${daily.length - doneCount === 1 ? "falta 1 hábito" : `faltan ${daily.length - doneCount} hábitos`}`}
-          </p>
-        </div>
-        <ProgressRing pct={pct}>
-          <span className="text-sm font-bold">{daily.length ? `${pct}%` : "–"}</span>
-        </ProgressRing>
+    <div className="space-y-10">
+      {/* Cabecera editorial */}
+      <header>
+        <p className="eyebrow">{formatLongDate(data.today)}</p>
+        <h1 className="mt-3 font-serif text-[2.1rem] leading-[1.1] tracking-tight">
+          {hello}
+          {data.display_name ? `, ${data.display_name}` : ""}.
+        </h1>
+        <p className="mt-2 text-ink-2">
+          {daily.length === 0
+            ? habits.length === 0
+              ? "Empieza creando tu primer hábito."
+              : "Hoy no tienes hábitos con día fijo."
+            : allDone
+              ? "Día perfecto. Todo hecho."
+              : `${left === 1 ? "Queda 1 hábito" : `Quedan ${left} hábitos`} por hoy.`}
+        </p>
+
+        {daily.length > 0 && (
+          <div className="mt-8">
+            <div className="flex items-end justify-between">
+              <span className="font-serif text-5xl leading-none tabular-nums">{pct}%</span>
+              <span className="text-right text-sm text-ink-2">
+                Día Perfecto
+                <br />
+                <span className="text-ink">
+                  {data.perfect_day_streak} {data.perfect_day_streak === 1 ? "día" : "días"}
+                </span>
+                <span className="text-ink-3"> · mejor {data.perfect_day_best}</span>
+              </span>
+            </div>
+            <div className="mt-4 h-px w-full bg-line">
+              <div className="h-px bg-ink transition-[width] duration-500" style={{ width: `${pct}%` }} />
+            </div>
+          </div>
+        )}
       </header>
 
-      {/* Racha de Día Perfecto */}
-      {habits.length > 0 && (
-        <div className="flex items-center justify-between rounded-2xl bg-gradient-to-r from-brand-600 to-violet-600 px-4 py-3 text-white shadow-lg shadow-brand-600/20">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-white/70">Racha de Día Perfecto</p>
-            <p className="text-2xl font-bold">
-              🔥 {data.perfect_day_streak} {data.perfect_day_streak === 1 ? "día" : "días"}
-            </p>
-          </div>
-          <p className="text-right text-xs text-white/70">
-            Mejor
-            <br />
-            <span className="text-base font-semibold text-white">{data.perfect_day_best}</span>
-          </p>
-        </div>
-      )}
-
-      {/* Solicitudes de rescate que esperan tu respuesta */}
       {data.pending_recovery_requests > 0 && (
-        <Link
-          href="/partner"
-          className="flex items-center gap-3 rounded-2xl border-2 border-amber-400/60 bg-amber-50 px-4 py-3 dark:bg-amber-500/5"
-        >
-          <span className="text-2xl">🛟</span>
-          <span className="flex-1 text-sm">
-            <span className="block font-semibold">Tu socio necesita tu ayuda</span>
-            {data.pending_recovery_requests === 1
-              ? "Tienes 1 solicitud de rescate pendiente"
-              : `Tienes ${data.pending_recovery_requests} solicitudes de rescate pendientes`}
+        <Link href="/partner" className="flex items-center justify-between border border-ink px-4 py-3">
+          <span className="text-sm">
+            <span className="block font-medium">Tu socio necesita tu respuesta</span>
+            <span className="text-ink-2">
+              {data.pending_recovery_requests === 1
+                ? "1 solicitud de rescate pendiente"
+                : `${data.pending_recovery_requests} solicitudes de rescate pendientes`}
+            </span>
           </span>
-          <span className="text-zinc-400">›</span>
+          <span aria-hidden>→</span>
         </Link>
       )}
 
       <RecoveryBanner misses={misses} today={data.today} />
 
-      {error && (
-        <p className="rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-600 dark:text-red-400">{error}</p>
-      )}
+      {error && <p className="border-l-2 border-ink pl-3 text-sm">{error}</p>}
 
-      {/* Estado vacío */}
       {habits.length === 0 && (
-        <div className="rounded-3xl border border-dashed border-zinc-300 px-6 py-12 text-center dark:border-zinc-700">
-          <p className="text-4xl">🌱</p>
-          <p className="mt-3 font-semibold">Todavía no tienes hábitos</p>
-          <p className="mt-1 text-sm text-zinc-500">Empieza con una plantilla o crea uno a tu medida.</p>
-          <Link
-            href="/habits/new"
-            className="mt-5 inline-block rounded-xl bg-brand-600 px-5 py-2.5 font-semibold text-white"
-          >
+        <div className="border-y border-line py-12 text-center">
+          <p className="font-serif text-2xl italic">Una página en blanco.</p>
+          <p className="mt-2 text-sm text-ink-2">Empieza con una plantilla o crea un hábito a tu medida.</p>
+          <Link href="/habits/new" className="btn btn-primary mt-6">
             Crear hábito
           </Link>
         </div>
       )}
 
-      {/* Hábitos de hoy agrupados por momento del día */}
       {SECTION_ORDER.map((slot) => {
         const items = active.filter((h) => h.time_of_day === slot);
         if (items.length === 0) return null;
         return (
           <section key={slot}>
-            <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-              {TIME_OF_DAY_LABEL[slot]}
-            </h2>
-            <ul className="space-y-2">
+            <h2 className="eyebrow mb-1">{TIME_OF_DAY_LABEL[slot]}</h2>
+            <ul className="divide-y divide-line border-y border-line">
               {items.map((h) => (
                 <li key={h.id}>
                   <HabitCard habit={h} onSetValue={(v) => setValue(h.id, v)} onOpen={() => setSheetId(h.id)} />
@@ -155,10 +137,10 @@ export function TodayView({ data, misses }: { data: TodayData; misses: Recoverab
 
       {notToday.length > 0 && (
         <details className="group">
-          <summary className="cursor-pointer list-none px-1 text-xs font-semibold uppercase tracking-wide text-zinc-400">
+          <summary className="eyebrow cursor-pointer list-none">
             Hoy no toca ({notToday.length}) <span className="inline-block transition group-open:rotate-90">›</span>
           </summary>
-          <ul className="mt-2 space-y-2 opacity-60">
+          <ul className="mt-1 divide-y divide-line border-y border-line opacity-50">
             {notToday.map((h) => (
               <li key={h.id}>
                 <HabitCard habit={h} disabled onSetValue={() => {}} onOpen={() => setSheetId(h.id)} />

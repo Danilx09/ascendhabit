@@ -1,8 +1,7 @@
 "use client";
 
 import { useRefreshOnFocus } from "@/hooks/useRefreshOnFocus";
-import { BRAND_COLOR, formatNumber, streakLabel } from "@/lib/habits";
-import { ProgressRing } from "@/components/ui/ProgressRing";
+import { formatNumber, streakLabel } from "@/lib/habits";
 import { RecoveryInbox } from "./RecoveryInbox";
 import { EndPartnership } from "./EndPartnership";
 import type { PartnerInfo, RecoveryRequest, UserSummary } from "@/types/app";
@@ -22,10 +21,12 @@ export function PartnerView({
   const partnerName = partner.display_name ?? info.partner_name ?? "Tu socio";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       <header>
-        <p className="text-sm text-zinc-500">Panel de Accountability</p>
-        <h1 className="text-2xl font-bold tracking-tight">Tú vs {partnerName}</h1>
+        <p className="eyebrow">Panel de Accountability</p>
+        <h1 className="mt-2 font-serif text-4xl tracking-tight">
+          Tú <span className="italic text-ink-3">y</span> {partnerName}
+        </h1>
       </header>
 
       <Duel me={me} partner={partner} partnerName={partnerName} />
@@ -33,32 +34,21 @@ export function PartnerView({
       <RecoveryInbox requests={requests} partnerName={partnerName} today={me.today} />
 
       <section>
-        <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-          Hábitos que comparte {partnerName}
-        </h2>
+        <h2 className="eyebrow mb-1">Lo que comparte {partnerName}</h2>
         {partner.habits.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-zinc-300 px-4 py-6 text-center text-sm text-zinc-500 dark:border-zinc-700">
-            {partnerName} no comparte el detalle de sus hábitos. Sus % y rachas sí cuentan todos.
+          <p className="border-y border-line py-6 text-center text-sm text-ink-3">
+            {partnerName} no comparte el detalle de sus hábitos. Su % y sus rachas sí los cuentan todos.
           </p>
         ) : (
-          <ul className="space-y-2">
+          <ul className="divide-y divide-line border-y border-line">
             {partner.habits.map((h) => {
-              const color = h.color ?? BRAND_COLOR;
               const quantitative = h.target !== 1 || h.unit;
               return (
-                <li
-                  key={h.id}
-                  className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900"
-                >
-                  <span
-                    className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-lg"
-                    style={{ backgroundColor: `${color}22` }}
-                  >
-                    {h.icon ?? "✨"}
-                  </span>
+                <li key={h.id} className="flex items-center gap-4 py-3.5">
+                  <span className="mono w-6 text-center text-lg">{h.icon ?? "·"}</span>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate font-medium">{h.name}</span>
-                    <span className="text-xs text-zinc-500">
+                    <span className="block truncate text-[15px]">{h.name}</span>
+                    <span className="text-xs text-ink-3">
                       {!h.scheduled_today
                         ? "Hoy no toca"
                         : quantitative
@@ -66,16 +56,13 @@ export function PartnerView({
                           : h.done_today
                             ? "Hecho hoy"
                             : "Pendiente hoy"}
-                      {h.current_streak > 0 && (
-                        <span className="ml-2 font-medium text-orange-500">
-                          🔥 {streakLabel(h.current_streak, h.streak_unit)}
-                        </span>
-                      )}
+                      {h.current_streak > 0 && ` — ${streakLabel(h.current_streak, h.streak_unit)}`}
                     </span>
                   </span>
                   <span
-                    className={`grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm ${
-                      h.done_today ? "bg-emerald-500 text-white" : "border-2 border-zinc-300 dark:border-zinc-700"
+                    aria-label={h.done_today ? "Hecho" : "Pendiente"}
+                    className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs ${
+                      h.done_today ? "bg-ink text-bg" : "border border-ink-3"
                     }`}
                   >
                     {h.done_today ? "✓" : ""}
@@ -100,42 +87,46 @@ function Duel({ me, partner, partnerName }: { me: UserSummary; partner: UserSumm
       ? "Hoy ninguno tiene hábitos programados."
       : myPct === theirPct
         ? myPct === 100
-          ? "¡Los dos con Día Perfecto! 🎉"
-          : "Empatados por ahora. ¡A por ello!"
+          ? "Los dos con Día Perfecto."
+          : "Empatados por ahora."
         : myPct > theirPct
-          ? `Vas por delante hoy. Anima a ${partnerName} 💬`
-          : `${partnerName} va por delante hoy. ¡Tu turno! 💪`;
+          ? `Vas por delante hoy. Anima a ${partnerName}.`
+          : `${partnerName} va por delante hoy. Tu turno.`;
 
   return (
-    <section className="rounded-3xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-      <div className="grid grid-cols-2 divide-x divide-zinc-200 dark:divide-zinc-800">
+    <section>
+      <div className="grid grid-cols-2 border-y border-line">
         <Player label="Tú" summary={me} />
-        <Player label={partnerName} summary={partner} />
+        <Player label={partnerName} summary={partner} left />
       </div>
-      <p className="mt-4 rounded-xl bg-zinc-100 px-3 py-2 text-center text-sm dark:bg-zinc-800">{verdict}</p>
+      <p className="mt-4 font-serif text-lg italic text-ink-2">{verdict}</p>
     </section>
   );
 }
 
-function Player({ label, summary }: { label: string; summary: UserSummary }) {
+function Player({ label, summary, left = false }: { label: string; summary: UserSummary; left?: boolean }) {
+  const pct = summary.today_pct ?? 0;
   return (
-    <div className="flex flex-col items-center gap-3 px-2">
-      <p className="max-w-full truncate text-sm font-semibold">{label}</p>
-      <ProgressRing pct={summary.today_pct ?? 0} size={84}>
-        <span className="text-center leading-tight">
-          <span className="block text-base font-bold">{summary.today_pct === null ? "–" : `${summary.today_pct}%`}</span>
-          <span className="block text-[10px] text-zinc-500">hoy</span>
-        </span>
-      </ProgressRing>
-      <dl className="w-full space-y-1 text-center text-xs">
-        <div>
-          <dt className="inline text-zinc-500">Semana </dt>
-          <dd className="inline font-semibold">{summary.week_pct === null ? "–" : `${summary.week_pct}%`}</dd>
+    <div className={`py-5 ${left ? "border-l border-line pl-5" : "pr-5"}`}>
+      <p className="eyebrow truncate">{label}</p>
+      <p className="mt-3 font-serif text-5xl leading-none tabular-nums">
+        {summary.today_pct === null ? "–" : `${summary.today_pct}%`}
+      </p>
+      <div className="mt-3 h-px w-full bg-line">
+        <div className="h-px bg-ink" style={{ width: `${pct}%` }} />
+      </div>
+      <dl className="mt-4 space-y-1 text-sm">
+        <div className="flex justify-between">
+          <dt className="text-ink-3">Semana</dt>
+          <dd className="tabular-nums">{summary.week_pct === null ? "–" : `${summary.week_pct}%`}</dd>
         </div>
-        <div>
-          <dt className="sr-only">Racha de Día Perfecto</dt>
-          <dd className="text-lg font-bold">🔥 {summary.perfect_day_streak}</dd>
-          <dd className="text-[11px] text-zinc-500">Día Perfecto · mejor {summary.perfect_day_best}</dd>
+        <div className="flex justify-between">
+          <dt className="text-ink-3">Día Perfecto</dt>
+          <dd className="tabular-nums">{summary.perfect_day_streak}</dd>
+        </div>
+        <div className="flex justify-between">
+          <dt className="text-ink-3">Mejor racha</dt>
+          <dd className="tabular-nums">{summary.perfect_day_best}</dd>
         </div>
       </dl>
     </div>

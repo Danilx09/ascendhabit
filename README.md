@@ -136,6 +136,26 @@ Safari → `ascendhabit.vercel.app` → botón Compartir → **Añadir a pantall
 
 ---
 
+## Fase 5 · Rediseño editorial + Diario cifrado
+
+### Diseño
+- **Estricto blanco y negro.** Tokens en `src/app/globals.css` (`bg`, `surface`, `ink`, `ink-2`, `ink-3`, `line`), usados como `bg-bg`, `text-ink-2`, `border-line`…
+- **Tipografía:** Newsreader (serif) para títulos y cifras, Inter para texto e interfaz.
+- **Piezas:** `btn btn-primary`, `btn btn-ghost`, `field` (campo tipo libreta), `eyebrow` (etiqueta), `mono` (emoji en grises), `ruled` (papel pautado).
+- **Tema:** botón luna/sol en la cabecera y selector Normal / Noche / Sistema en Ajustes. Se guarda en el dispositivo y se aplica antes de pintar, sin parpadeo.
+- **Estados sin color:** relleno = hecho, contorno doble = rescatado, discontinuo = parcial, barra diagonal = fallado.
+
+### Diario + Bitácora (pestaña Diario)
+- **Cifrado de extremo a extremo.** Cada uno crea una *frase del diario*; los textos se cifran en el dispositivo (AES-256-GCM, clave PBKDF2 de 600k iteraciones) y la base de datos rechaza cualquier texto sin cifrar. **Si se olvida la frase, los textos no se pueden recuperar** (sí la energía y la emoción).
+- **Autoguardado:** cada campo se guarda a los ~1 s de dejar de escribir y al salir de la app.
+- **Bitácora:** energía 1–5, emoción principal, gratitud/victoria, conciencia y aprendizaje.
+- **Historial:** flechas entre días con entrada y lista del mes (fecha, energía, emoción).
+
+### Configuración
+**SQL Editor** → ejecuta `supabase/migrations/20261006000001_journal.sql`.
+
+---
+
 ## Estructura
 
 ```
@@ -156,6 +176,10 @@ public/icons/          Iconos de la app (provisionales)
 | `get_recoverable_misses()` | Días fallados que aún se pueden rescatar |
 | `get_habit_detail(p_habit_id, p_month)` | Calendario de un mes + estadísticas de un hábito |
 | `set_habit_archived(p_habit_id, p_archived)` | Archivar o restaurar un hábito |
+| `save_journal_entry(p_date, p_patch)` | Guarda solo los campos enviados del diario/bitácora (textos ya cifrados) |
+| `get_journal_day(p_date)` | Entrada de un día + navegación + parámetros de la clave |
+| `get_journal_month(p_month)` | Resumen del mes (energía, emoción; sin texto) |
+| `setup_journal_key` / `reset_journal_key` | Crear o restablecer la frase del diario |
 | `get_my_summary()` | % de hoy y de la semana, racha de Día Perfecto y hábitos con sus rachas |
 | `get_my_habit_streaks()` | Racha actual y mejor racha de cada hábito |
 | `get_partner_summary()` | Panel de accountability (solo agregados + hábitos compartidos) |

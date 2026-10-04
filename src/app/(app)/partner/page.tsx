@@ -14,8 +14,11 @@ export default async function PartnerPage() {
 
   if (!partnerInfo.partner_id) {
     return (
-      <div className="space-y-6">
-        <h1 className="text-2xl font-bold tracking-tight">Socio</h1>
+      <div className="space-y-8">
+        <header>
+          <p className="eyebrow">Accountability</p>
+          <h1 className="mt-2 font-serif text-4xl tracking-tight">Socio</h1>
+        </header>
         <ConnectPartner inviteCode={partnerInfo.invite_code} />
       </div>
     );

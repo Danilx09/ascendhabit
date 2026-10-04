@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { forgetKeys } from "@/lib/journal-crypto";
+import { ThemeSelector } from "@/components/ui/ThemeToggle";
 
 export function SettingsForm({
   userId,
@@ -52,41 +54,47 @@ export function SettingsForm({
   }
 
   async function signOut() {
+    await forgetKeys(); // la clave del diario no se queda en el dispositivo
     await supabase.auth.signOut();
     router.replace("/login");
     router.refresh();
   }
 
-
   return (
-    <div className="space-y-6">
-      <form onSubmit={save} className="space-y-4 rounded-2xl border border-zinc-200 p-4 dark:border-zinc-800">
+    <div className="space-y-12">
+      <section>
+        <p className="eyebrow mb-3">Apariencia</p>
+        <ThemeSelector />
+      </section>
+
+      <form onSubmit={save} className="space-y-6">
+        <p className="eyebrow">Perfil</p>
         <label className="block">
-          <span className="mb-1.5 block text-sm font-medium">Tu nombre</span>
+          <span className="text-sm text-ink-2">Tu nombre</span>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
             maxLength={50}
             placeholder="Cómo te verá tu socio"
-            className={inputClass}
+            className="field"
           />
         </label>
 
         <label className="block">
-          <span className="mb-1.5 block text-sm font-medium">Zona horaria</span>
-          <select value={timezone} onChange={(e) => setTimezone(e.target.value)} className={inputClass}>
+          <span className="text-sm text-ink-2">Zona horaria</span>
+          <select value={timezone} onChange={(e) => setTimezone(e.target.value)} className="field bg-bg">
             {zones.map((z) => (
               <option key={z} value={z}>
                 {z.replaceAll("_", " ")}
               </option>
             ))}
           </select>
-          <span className="mt-1.5 block text-xs text-zinc-500">
+          <span className="mt-2 block text-xs text-ink-3">
             Define cuándo empieza y termina tu día para las rachas.
             {deviceZone && deviceZone !== timezone && (
               <>
                 {" "}
-                <button type="button" onClick={() => setTimezone(deviceZone)} className="font-medium text-brand-500">
+                <button type="button" onClick={() => setTimezone(deviceZone)} className="text-ink underline underline-offset-4">
                   Usar la de este dispositivo ({deviceZone})
                 </button>
               </>
@@ -94,30 +102,19 @@ export function SettingsForm({
           </span>
         </label>
 
-        {message && <p className="text-sm text-red-500">{message}</p>}
-        <button
-          type="submit"
-          disabled={status === "saving"}
-          className="w-full rounded-xl bg-brand-600 py-3 font-semibold text-white disabled:opacity-50"
-        >
-          {status === "saving" ? "Guardando…" : status === "saved" ? "Guardado ✓" : "Guardar cambios"}
+        {message && <p className="border-l-2 border-ink pl-3 text-sm">{message}</p>}
+        <button type="submit" disabled={status === "saving"} className="btn btn-primary w-full">
+          {status === "saving" ? "Guardando…" : status === "saved" ? "Guardado" : "Guardar cambios"}
         </button>
       </form>
 
-      <div className="rounded-2xl border border-zinc-200 p-4 dark:border-zinc-800">
-        <p className="text-sm text-zinc-500">Sesión iniciada como</p>
-        <p className="font-medium">{email}</p>
-        <button
-          type="button"
-          onClick={signOut}
-          className="mt-4 w-full rounded-xl border border-red-500/40 py-3 font-medium text-red-500"
-        >
+      <section className="border-t border-line pt-6">
+        <p className="eyebrow">Sesión</p>
+        <p className="mt-2 text-sm">{email}</p>
+        <button type="button" onClick={signOut} className="btn btn-ghost mt-5 w-full">
           Cerrar sesión
         </button>
-      </div>
+      </section>
     </div>
   );
 }
-
-const inputClass =
-  "w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-base outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15 dark:border-zinc-700 dark:bg-zinc-900";

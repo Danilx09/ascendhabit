@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { BRAND_COLOR, formatNumber, frequencyLabel, streakLabel, TIME_OF_DAY_LABEL } from "@/lib/habits";
+import { formatNumber, frequencyLabel, streakLabel, TIME_OF_DAY_LABEL } from "@/lib/habits";
 import { HabitCalendar } from "@/components/habits/HabitCalendar";
 import { HabitActions } from "@/components/habits/HabitActions";
 import type { HabitDetail } from "@/types/app";
@@ -24,75 +24,62 @@ export default async function HabitDetailPage({
   if (error) throw new Error(error.message);
   const d = data as HabitDetail;
   const h = d.habit;
-  const color = h.color ?? BRAND_COLOR;
   const unit = h.unit ?? (h.goal_type === "duration" ? "min" : "");
 
   return (
-    <div className="space-y-6">
-      <Link href="/habits" className="text-sm text-zinc-500">
-        ‹ Hábitos
+    <div className="space-y-10">
+      <Link href="/habits" className="text-sm text-ink-3">
+        ← Hábitos
       </Link>
 
-      <header className="flex items-start gap-4">
-        <span
-          className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl text-3xl"
-          style={{ backgroundColor: `${color}22` }}
-        >
-          {h.icon ?? "✨"}
-        </span>
-        <div className="min-w-0">
-          <h1 className="text-2xl font-bold tracking-tight">{h.name}</h1>
-          <p className="text-sm text-zinc-500">
-            {frequencyLabel(h)} · {TIME_OF_DAY_LABEL[h.time_of_day]}
-            {h.goal_type !== "boolean" && ` · ${formatNumber(h.target_value)} ${unit}`}
-          </p>
-          <p className="mt-1 text-xs text-zinc-500">
-            {h.share_with_partner ? "👀 Visible para tu socio" : "🔒 Privado"}
-          </p>
-        </div>
+      <header>
+        <p className="eyebrow">
+          {frequencyLabel(h)} · {TIME_OF_DAY_LABEL[h.time_of_day]}
+          {h.goal_type !== "boolean" && ` · ${formatNumber(h.target_value)} ${unit}`}
+        </p>
+        <h1 className="mt-3 flex items-baseline gap-3 font-serif text-4xl leading-tight tracking-tight">
+          <span className="mono text-3xl">{h.icon ?? ""}</span>
+          {h.name}
+        </h1>
+        <p className="mt-2 text-sm text-ink-3">{h.share_with_partner ? "Visible para tu socio" : "Privado"}</p>
+        {h.description && <p className="mt-4 text-ink-2">{h.description}</p>}
       </header>
 
       {h.archived_on && (
-        <p className="rounded-xl bg-zinc-100 px-4 py-3 text-sm text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+        <p className="border-l-2 border-ink pl-3 text-sm text-ink-2">
           Archivado. No aparece en Hoy ni cuenta para tu % ni para el Día Perfecto.
         </p>
       )}
 
-      {/* Indicadores: valores en tinta de texto, nunca en el color del hábito */}
-      <dl className="grid grid-cols-2 gap-2">
-        <Stat label="Racha actual" value={streakLabel(d.current_streak, d.streak_unit)} icon="🔥" />
-        <Stat label="Mejor racha" value={streakLabel(d.best_streak, d.streak_unit)} icon="🏆" />
+      {/* Indicadores: cifras grandes en serif, etiquetas discretas */}
+      <dl className="grid grid-cols-2 border-t border-line">
+        <Stat label="Racha actual" value={streakLabel(d.current_streak, d.streak_unit)} />
+        <Stat label="Mejor racha" value={streakLabel(d.best_streak, d.streak_unit)} left />
         <Stat
-          label={h.frequency_type === "times_per_week" ? "Cumplimiento (4 semanas)" : "Cumplimiento (30 días)"}
+          label={h.frequency_type === "times_per_week" ? "Cumplimiento · 4 sem" : "Cumplimiento · 30 días"}
           value={d.rate_30d === null ? "–" : `${d.rate_30d}%`}
-          icon="📈"
         />
         <Stat
-          label="Total completados"
+          label="Completados"
           value={String(d.total_done)}
           hint={d.recovered_count > 0 ? `${d.recovered_count} rescatados` : undefined}
-          icon="✅"
+          left
         />
       </dl>
 
       <HabitCalendar detail={d} />
-
-      {h.description && <p className="text-sm text-zinc-500">{h.description}</p>}
 
       <HabitActions habitId={h.id} archived={!!h.archived_on} />
     </div>
   );
 }
 
-function Stat({ label, value, hint, icon }: { label: string; value: string; hint?: string; icon: string }) {
+function Stat({ label, value, hint, left = false }: { label: string; value: string; hint?: string; left?: boolean }) {
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
-      <dt className="text-xs text-zinc-500">
-        <span aria-hidden>{icon} </span>
-        {label}
-      </dt>
-      <dd className="mt-1 text-xl font-bold">{value}</dd>
-      {hint && <dd className="text-xs text-zinc-500">{hint}</dd>}
+    <div className={`border-b border-line py-4 ${left ? "border-l pl-4" : "pr-4"}`}>
+      <dt className="eyebrow">{label}</dt>
+      <dd className="mt-2 font-serif text-3xl tabular-nums">{value}</dd>
+      {hint && <dd className="mt-1 text-xs text-ink-3">{hint}</dd>}
     </div>
   );
 }

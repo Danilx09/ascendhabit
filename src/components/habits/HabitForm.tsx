@@ -7,6 +7,7 @@ import { TIME_OF_DAY_LABEL, WEEKDAYS } from "@/lib/habits";
 import type { Category, FrequencyType, GoalType, HabitRow, HabitTemplate, TimeOfDay } from "@/types/app";
 
 const ICONS = ["💧", "🏃", "🧘", "📖", "🎯", "📵", "✍️", "💪", "🥗", "😴", "💊", "🧹", "💰", "🎸", "🌱", "☀️", "🚭", "🧠"];
+// El color se conserva en la BD, pero la interfaz es monocroma y no lo muestra
 const COLORS = ["#6366F1", "#8B5CF6", "#EC4899", "#EF4444", "#F97316", "#EAB308", "#10B981", "#06B6D4", "#3B82F6"];
 
 const GOALS: { value: GoalType; label: string }[] = [
@@ -178,24 +179,22 @@ export function HabitForm({
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-6">
+    <form onSubmit={onSubmit} className="space-y-10">
       {/* Plantillas */}
       {templates.length > 0 && (
         <section>
           <Label>Empieza con una plantilla</Label>
-          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
+          <div className="-mx-6 flex gap-2 overflow-x-auto px-6 pb-1 [scrollbar-width:none]">
             {templates.map((t) => (
               <button
                 key={t.id}
                 type="button"
                 onClick={() => applyTemplate(t)}
-                className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition ${
-                  templateId === t.id
-                    ? "border-brand-500 bg-brand-500/10 text-brand-600 dark:text-brand-50"
-                    : "border-zinc-200 dark:border-zinc-800"
+                className={`flex shrink-0 items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm transition ${
+                  templateId === t.id ? "border-ink bg-ink text-bg" : "border-line text-ink-2"
                 }`}
               >
-                <span>{t.icon}</span>
+                <span className="mono">{t.icon}</span>
                 {t.name}
               </button>
             ))}
@@ -203,47 +202,30 @@ export function HabitForm({
         </section>
       )}
 
-      {/* Nombre + icono + color */}
-      <section className="space-y-3">
-        <div className="flex items-center gap-3">
-          <span
-            className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl text-3xl"
-            style={{ backgroundColor: `${form.color}22` }}
-          >
-            {form.icon}
-          </span>
+      {/* Nombre + icono */}
+      <section className="space-y-5">
+        <div className="flex items-end gap-4">
+          <span className="mono pb-2 text-3xl">{form.icon}</span>
           <input
             value={form.name}
             onChange={(e) => set("name", e.target.value)}
             placeholder="Nombre del hábito"
             maxLength={80}
-            className={`${inputClass} text-lg font-medium`}
+            className="field font-serif text-2xl"
           />
         </div>
-        <div className="grid grid-cols-9 gap-1.5">
+        <div className="grid grid-cols-9 gap-1">
           {ICONS.map((icon) => (
             <button
               key={icon}
               type="button"
               onClick={() => set("icon", icon)}
-              className={`grid aspect-square place-items-center rounded-lg text-lg transition ${
-                form.icon === icon ? "bg-zinc-200 dark:bg-zinc-700" : "hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              className={`mono grid aspect-square place-items-center text-lg transition ${
+                form.icon === icon ? "border border-ink" : "border border-transparent opacity-60"
               }`}
             >
               {icon}
             </button>
-          ))}
-        </div>
-        <div className="flex justify-between">
-          {COLORS.map((c) => (
-            <button
-              key={c}
-              type="button"
-              aria-label={`Color ${c}`}
-              onClick={() => set("color", c)}
-              className={`h-8 w-8 rounded-full transition ${form.color === c ? "scale-110 ring-2 ring-offset-2 ring-zinc-400 dark:ring-offset-zinc-950" : ""}`}
-              style={{ backgroundColor: c }}
-            />
           ))}
         </div>
       </section>
@@ -253,7 +235,7 @@ export function HabitForm({
         <Label>Meta</Label>
         <Segmented options={GOALS} value={form.goal_type} onChange={changeGoal} />
         {form.goal_type !== "boolean" && (
-          <div className="mt-3 flex gap-2">
+          <div className="mt-4 flex items-end gap-4">
             <input
               type="number"
               inputMode="decimal"
@@ -261,17 +243,17 @@ export function HabitForm({
               step="any"
               value={form.target_value}
               onChange={(e) => set("target_value", Number(e.target.value))}
-              className={`${inputClass} w-28 text-center`}
+              className="field w-24 text-center font-serif text-xl"
             />
             {form.goal_type === "duration" ? (
-              <span className="flex items-center px-2 text-zinc-500">minutos al día</span>
+              <span className="pb-3 text-ink-2">minutos al día</span>
             ) : (
               <input
                 value={form.unit}
                 onChange={(e) => set("unit", e.target.value)}
                 placeholder="unidad (vasos, páginas…)"
                 maxLength={20}
-                className={inputClass}
+                className="field"
               />
             )}
           </div>
@@ -283,17 +265,16 @@ export function HabitForm({
         <Label>Frecuencia</Label>
         <Segmented options={FREQUENCIES} value={form.frequency_type} onChange={(v) => set("frequency_type", v)} />
         {form.frequency_type === "specific_days" && (
-          <div className="mt-3 flex justify-between">
+          <div className="mt-4 flex justify-between">
             {WEEKDAYS.map((d) => (
               <button
                 key={d.iso}
                 type="button"
                 aria-label={d.long}
+                aria-pressed={form.frequency_days.includes(d.iso)}
                 onClick={() => toggleDay(d.iso)}
-                className={`h-10 w-10 rounded-full text-sm font-semibold transition ${
-                  form.frequency_days.includes(d.iso)
-                    ? "bg-brand-600 text-white"
-                    : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800"
+                className={`h-10 w-10 rounded-full text-sm transition ${
+                  form.frequency_days.includes(d.iso) ? "bg-ink text-bg" : "border border-line text-ink-3"
                 }`}
               >
                 {d.short}
@@ -302,16 +283,16 @@ export function HabitForm({
           </div>
         )}
         {frequencyChanged && (
-          <p className="mt-2 rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+          <p className="mt-3 border-l-2 border-ink pl-3 text-xs text-ink-2">
             Cambiar la frecuencia recalcula también las rachas de días pasados.
           </p>
         )}
         {form.frequency_type === "times_per_week" && (
-          <div className="mt-3 flex items-center justify-between rounded-xl bg-zinc-100 px-4 py-2 dark:bg-zinc-800/60">
-            <span className="text-sm">Veces por semana</span>
-            <div className="flex items-center gap-3">
+          <div className="mt-4 flex items-center justify-between border-b border-line pb-3">
+            <span className="text-sm text-ink-2">Veces por semana</span>
+            <div className="flex items-center gap-4">
               <StepButton onClick={() => set("times_per_week", Math.max(1, form.times_per_week - 1))}>−</StepButton>
-              <span className="w-4 text-center font-semibold">{form.times_per_week}</span>
+              <span className="w-4 text-center font-serif text-xl tabular-nums">{form.times_per_week}</span>
               <StepButton onClick={() => set("times_per_week", Math.min(7, form.times_per_week + 1))}>+</StepButton>
             </div>
           </div>
@@ -321,7 +302,7 @@ export function HabitForm({
       {/* Momento del día */}
       <section>
         <Label>Momento del día</Label>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="flex flex-wrap gap-2">
           {(Object.keys(TIME_OF_DAY_LABEL) as TimeOfDay[]).map((t) => (
             <Chip key={t} active={form.time_of_day === t} onClick={() => set("time_of_day", t)}>
               {TIME_OF_DAY_LABEL[t]}
@@ -347,7 +328,7 @@ export function HabitForm({
                 active={form.category_id === c.id}
                 onClick={() => set("category_id", form.category_id === c.id ? null : c.id)}
               >
-                {c.icon} {c.name}
+                {c.name}
               </Chip>
             ))}
           </div>
@@ -356,10 +337,10 @@ export function HabitForm({
 
       {/* Privacidad */}
       <section>
-        <label className="flex cursor-pointer items-start justify-between gap-4 rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
+        <label className="flex cursor-pointer items-start justify-between gap-6 border-y border-line py-4">
           <span>
-            <span className="block font-medium">Visible para mi socio</span>
-            <span className="mt-0.5 block text-sm text-zinc-500">
+            <span className="block text-[15px]">Visible para mi socio</span>
+            <span className="mt-1 block text-sm text-ink-3">
               Si está apagado, tu socio no ve el nombre del hábito, aunque sí cuenta en tu % del día.
             </span>
           </span>
@@ -367,29 +348,22 @@ export function HabitForm({
             type="checkbox"
             checked={form.share_with_partner}
             onChange={(e) => set("share_with_partner", e.target.checked)}
-            className="mt-1 h-5 w-5 shrink-0 accent-brand-600"
+            className="mt-1 h-5 w-5 shrink-0 accent-current"
           />
         </label>
       </section>
 
-      {error && <p className="text-sm text-red-500">{error}</p>}
+      {error && <p className="border-l-2 border-ink pl-3 text-sm">{error}</p>}
 
-      <button
-        type="submit"
-        disabled={saving}
-        className="w-full rounded-xl bg-brand-600 py-3.5 font-semibold text-white transition active:scale-[0.98] disabled:opacity-50"
-      >
+      <button type="submit" disabled={saving} className="btn btn-primary w-full">
         {saving ? "Guardando…" : initial ? "Guardar cambios" : "Crear hábito"}
       </button>
     </form>
   );
 }
 
-const inputClass =
-  "w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-base outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15 dark:border-zinc-700 dark:bg-zinc-900";
-
 function Label({ children }: { children: React.ReactNode }) {
-  return <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">{children}</p>;
+  return <p className="eyebrow mb-3">{children}</p>;
 }
 
 function Segmented<T extends string | number>({
@@ -402,14 +376,14 @@ function Segmented<T extends string | number>({
   onChange: (v: T) => void;
 }) {
   return (
-    <div className="grid rounded-xl bg-zinc-100 p-1 dark:bg-zinc-800/60" style={{ gridTemplateColumns: `repeat(${options.length}, 1fr)` }}>
-      {options.map((o) => (
+    <div className="grid border border-line" style={{ gridTemplateColumns: `repeat(${options.length}, 1fr)` }}>
+      {options.map((o, i) => (
         <button
           key={String(o.value)}
           type="button"
           onClick={() => onChange(o.value)}
-          className={`rounded-lg py-2 text-sm font-medium transition ${
-            value === o.value ? "bg-white shadow-sm dark:bg-zinc-700" : "text-zinc-500"
+          className={`py-2.5 text-sm transition ${i > 0 ? "border-l border-line" : ""} ${
+            value === o.value ? "bg-ink text-bg" : "text-ink-2"
           }`}
         >
           {o.label}
@@ -424,10 +398,8 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-xl border px-3 py-2 text-sm transition ${
-        active
-          ? "border-brand-500 bg-brand-500/10 font-medium text-brand-600 dark:text-brand-50"
-          : "border-zinc-200 text-zinc-600 dark:border-zinc-800 dark:text-zinc-400"
+      className={`rounded-full border px-3.5 py-1.5 text-sm transition ${
+        active ? "border-ink bg-ink text-bg" : "border-line text-ink-2"
       }`}
     >
       {children}
@@ -440,7 +412,7 @@ function StepButton({ onClick, children }: { onClick: () => void; children: Reac
     <button
       type="button"
       onClick={onClick}
-      className="grid h-8 w-8 place-items-center rounded-full bg-white text-lg dark:bg-zinc-700"
+      className="grid h-8 w-8 place-items-center rounded-full border border-line text-lg font-light"
     >
       {children}
     </button>

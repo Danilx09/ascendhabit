@@ -13,34 +13,23 @@ export function RecoveryBanner({ misses, today }: { misses: RecoverableMiss[]; t
   if (misses.length === 0 && !sentTo) return null;
 
   return (
-    <section className="rounded-2xl border border-orange-400/50 bg-orange-50 p-4 dark:bg-orange-500/5">
-      {sentTo && (
-        <p className="mb-3 rounded-lg bg-emerald-500/15 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-400">
-          Solicitud enviada a {sentTo}. Te avisaremos aquí cuando responda.
-        </p>
-      )}
+    <section className="border border-dashed border-ink-3 px-4 py-4">
+      {sentTo && <p className="mb-3 text-sm">Solicitud enviada a {sentTo}. Verás aquí su respuesta.</p>}
       {misses.length > 0 && (
         <>
-          <p className="font-semibold">⚠️ Racha en riesgo</p>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            ¿Tuviste un motivo justificado? Pide a tu socio que la rescate. Tienes 48 h.
+          <p className="eyebrow">Racha en riesgo</p>
+          <p className="mt-2 text-sm text-ink-2">
+            ¿Hubo un motivo justificado? Pide a tu socio que la rescate. Tienes 48 h.
           </p>
-          <ul className="mt-3 space-y-2">
+          <ul className="mt-3 divide-y divide-line">
             {misses.map((m) => (
-              <li
-                key={`${m.habit_id}-${m.missed_date}`}
-                className="flex items-center gap-3 rounded-xl bg-white px-3 py-2 dark:bg-zinc-900"
-              >
-                <span className="text-xl">{m.habit_icon ?? "✨"}</span>
+              <li key={`${m.habit_id}-${m.missed_date}`} className="flex items-center gap-3 py-2.5">
+                <span className="mono w-6 text-center text-lg">{m.habit_icon ?? "·"}</span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium">{m.habit_name}</span>
-                  <span className="text-xs text-zinc-500">Fallado {relativeDay(m.missed_date, today)}</span>
+                  <span className="block truncate text-sm">{m.habit_name}</span>
+                  <span className="text-xs text-ink-3">Fallado {relativeDay(m.missed_date, today)}</span>
                 </span>
-                <button
-                  type="button"
-                  onClick={() => setSelected(m)}
-                  className="shrink-0 rounded-lg bg-orange-500 px-3 py-1.5 text-sm font-semibold text-white"
-                >
+                <button type="button" onClick={() => setSelected(m)} className="text-sm underline underline-offset-4">
                   Pedir rescate
                 </button>
               </li>

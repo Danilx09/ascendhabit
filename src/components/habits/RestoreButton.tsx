@@ -21,7 +21,7 @@ export function RestoreButton({ habitId }: { habitId: string }) {
       type="button"
       onClick={restore}
       disabled={loading}
-      className="shrink-0 rounded-lg border border-zinc-300 px-3 py-1 text-xs font-medium disabled:opacity-50 dark:border-zinc-700"
+      className="shrink-0 text-sm underline underline-offset-4 disabled:opacity-40"
     >
       {loading ? "…" : "Restaurar"}
     </button>

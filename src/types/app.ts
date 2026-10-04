@@ -167,3 +167,34 @@ export interface HabitDetail {
   recovered_count: number;
   days: CalendarDay[];
 }
+
+/** Fila de journal_entries tal como la devuelve get_journal_day() (textos cifrados) */
+export interface JournalEntry {
+  id: string;
+  entry_date: string;
+  free_journal: string | null;
+  mood_score: number | null;
+  primary_emotion: string | null;
+  q_gratitude: string | null;
+  q_challenge: string | null;
+  q_learning: string | null;
+  updated_at: string;
+}
+
+export interface JournalDay {
+  today: string;
+  date: string;
+  entry: JournalEntry | null;
+  prev_date: string | null;
+  next_date: string | null;
+  total_entries: number;
+  key: { salt: string; iterations: number; verifier: string } | null;
+}
+
+export interface JournalMonthItem {
+  entry_date: string;
+  mood_score: number | null;
+  primary_emotion: string | null;
+  has_journal: boolean;
+  has_reflection: boolean;
+}

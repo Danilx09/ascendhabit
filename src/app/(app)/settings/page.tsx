@@ -12,20 +12,15 @@ export default async function SettingsPage() {
 
   const { data: profile, error } = await supabase
     .from("profiles")
-    .select("display_name, timezone, invite_code")
+    .select("display_name, timezone")
     .eq("id", userId)
     .single();
   if (error) throw new Error(error.message);
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight">Ajustes</h1>
-      <SettingsForm
-        userId={userId}
-        email={email}
-        initialName={profile.display_name ?? ""}
-        initialTimezone={profile.timezone}
-      />
+    <div className="space-y-10">
+      <h1 className="font-serif text-4xl tracking-tight">Ajustes</h1>
+      <SettingsForm userId={userId} email={email} initialName={profile.display_name ?? ""} initialTimezone={profile.timezone} />
     </div>
   );
 }

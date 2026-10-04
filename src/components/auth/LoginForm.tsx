@@ -62,16 +62,14 @@ export function LoginForm({ initialError }: { initialError: string | null }) {
     router.refresh();
   }
 
-  const inputClass =
-    "w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-base outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15 dark:border-zinc-700 dark:bg-zinc-900";
-  const buttonClass =
-    "w-full rounded-xl bg-brand-600 px-4 py-3 font-semibold text-white transition active:scale-[0.98] disabled:opacity-50";
+  const inputClass = "field";
+  const buttonClass = "btn btn-primary w-full";
 
   if (step === "email") {
     return (
-      <form onSubmit={sendCode} className="space-y-4">
+      <form onSubmit={sendCode} className="space-y-6">
         <label className="block">
-          <span className="mb-1.5 block text-sm font-medium">Tu email</span>
+          <span className="eyebrow">Tu email</span>
           <input
             type="email"
             required
@@ -84,11 +82,11 @@ export function LoginForm({ initialError }: { initialError: string | null }) {
             className={inputClass}
           />
         </label>
-        {error && <p className="text-sm text-red-500">{error}</p>}
+        {error && <p className="border-l-2 border-ink pl-3 text-sm">{error}</p>}
         <button type="submit" disabled={loading || !email} className={buttonClass}>
           {loading ? "Enviando…" : "Enviarme un código"}
         </button>
-        <p className="text-center text-xs text-zinc-500">
+        <p className="text-center text-xs text-ink-3">
           Sin contraseñas. Si es tu primera vez, se crea tu cuenta.
         </p>
       </form>
@@ -96,9 +94,9 @@ export function LoginForm({ initialError }: { initialError: string | null }) {
   }
 
   return (
-    <form onSubmit={verifyCode} className="space-y-4">
-      <p className="text-sm text-zinc-500">
-        Enviamos un código a <span className="font-medium text-zinc-900 dark:text-zinc-100">{email}</span>.
+    <form onSubmit={verifyCode} className="space-y-6">
+      <p className="text-sm text-ink-2">
+        Enviamos un código a <span className="text-ink">{email}</span>.
         Revisa también la carpeta de spam.
       </p>
       <input
@@ -112,9 +110,9 @@ export function LoginForm({ initialError }: { initialError: string | null }) {
         placeholder="123456"
         value={code}
         onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-        className={`${inputClass} text-center font-mono text-2xl tracking-[0.4em]`}
+        className={`${inputClass} text-center font-serif text-3xl tracking-[0.4em]`}
       />
-      {error && <p className="text-sm text-red-500">{error}</p>}
+      {error && <p className="border-l-2 border-ink pl-3 text-sm">{error}</p>}
       <button type="submit" disabled={loading || code.length < 6} className={buttonClass}>
         {loading ? "Verificando…" : "Entrar"}
       </button>
@@ -125,7 +123,7 @@ export function LoginForm({ initialError }: { initialError: string | null }) {
             setStep("email");
             setError(null);
           }}
-          className="text-zinc-500"
+          className="text-ink-3"
         >
           ← Cambiar email
         </button>
@@ -133,7 +131,7 @@ export function LoginForm({ initialError }: { initialError: string | null }) {
           type="button"
           disabled={cooldown > 0 || loading}
           onClick={() => sendCode()}
-          className="font-medium text-brand-500 disabled:text-zinc-400"
+          className="underline underline-offset-4 disabled:text-ink-3 disabled:no-underline"
         >
           {cooldown > 0 ? `Reenviar en ${cooldown}s` : "Reenviar código"}
         </button>

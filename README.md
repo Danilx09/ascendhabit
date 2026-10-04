@@ -225,6 +225,20 @@ Safari → `ascendhabit.vercel.app` → botón Compartir → **Añadir a pantall
 
 ---
 
+## Fase 9 · Cambiar frase del diario + ordenar hábitos
+
+### Qué incluye
+- **Cambiar la frase sin perder textos** (Diario → "Cambiar frase", abajo). Los textos se cifran con una
+  clave aleatoria del diario; la frase solo la "envuelve". Cambiarla vuelve a envolver esa clave: es
+  instantáneo y no toca ninguna entrada. Los diarios creados antes se adaptan solos al primer cambio.
+  En otros dispositivos hay que escribir la frase nueva. "Olvidé mi frase" sigue igual (borra textos).
+- **Ordenar hábitos** (Hábitos → "Ordenar"): arrastra ⋮⋮ o usa ↑↓ y pulsa "Listo". Ese orden se usa en
+  Hoy y en el correo. La prioridad alta se muestra como etiqueta "Alta". Los hábitos nuevos van al final.
+
+### Configuración
+Ejecuta `supabase/migrations/20261008000001_passphrase_and_order.sql` en el SQL Editor (una vez).
+El orden inicial será el que ya veías (prioridad y antigüedad).
+
 ## Estructura
 
 ```

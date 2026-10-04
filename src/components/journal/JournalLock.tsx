@@ -39,6 +39,7 @@ export function JournalLock({
       p_salt: p.salt,
       p_iterations: p.iterations,
       p_verifier: p.verifier,
+      p_wrapped_key: p.wrapped_key,
     });
     setBusy(false);
     if (error) return setError(translateDbError(error.message, t));

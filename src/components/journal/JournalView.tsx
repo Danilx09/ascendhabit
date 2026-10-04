@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { formatLongDate } from "@/lib/dates";
 import { decryptText, loadRememberedKey } from "@/lib/journal-crypto";
 import { JournalLock } from "./JournalLock";
+import { ChangePassphrase } from "./ChangePassphrase";
 import { JournalEditor, type JournalTab } from "./JournalEditor";
 import { useT } from "@/lib/i18n/client";
 import type { JournalDay } from "@/types/app";
@@ -20,6 +21,8 @@ export function JournalView({ userId, day }: { userId: string; day: JournalDay }
   const [key, setKey] = useState<CryptoKey | null>(null);
   const [status, setStatus] = useState<Status>("checking");
   const [tab, setTab] = useState<JournalTab>("diario");
+  const [changing, setChanging] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     if (key) return setStatus("unlocked");
@@ -103,6 +106,35 @@ export function JournalView({ userId, day }: { userId: string; day: JournalDay }
 
       {status === "unlocked" && key && (
         <JournalEditor key={day.date} cryptoKey={key} date={day.date} isToday={isToday} entry={day.entry} tab={tab} />
+      )}
+
+      {status === "unlocked" && day.key && (
+        <footer className="border-t border-line pt-4 text-center">
+          {notice && <p className="mb-3 text-sm text-ink-2">{notice}</p>}
+          <button
+            type="button"
+            onClick={() => {
+              setNotice(null);
+              setChanging(true);
+            }}
+            className="text-xs text-ink-3 underline underline-offset-4"
+          >
+            {t.lock.change}
+          </button>
+        </footer>
+      )}
+
+      {changing && day.key && (
+        <ChangePassphrase
+          userId={userId}
+          params={day.key}
+          onClose={() => setChanging(false)}
+          onChanged={() => {
+            // Misma clave del diario (solo cambió cómo se envuelve): el editor no se toca
+            setChanging(false);
+            setNotice(t.lock.changed);
+          }}
+        />
       )}
     </div>
   );

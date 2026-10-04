@@ -53,6 +53,7 @@ export function translateDbError(message: string, t: Dict): string {
     "Ya existe una solicitud para ese día": e.duplicateRequest,
     "Ya no son socios": e.noLongerPartners,
     "Ya tienes una frase configurada": e.phraseExists,
+    "La frase cambió en otro dispositivo": e.phraseChangedElsewhere,
     "recovered_via solo lo asigna la aprobación del socio": e.recoveredOnlyByPartner,
   };
   const msg = message.trim();

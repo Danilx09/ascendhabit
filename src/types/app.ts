@@ -192,7 +192,7 @@ export interface JournalDay {
   prev_date: string | null;
   next_date: string | null;
   total_entries: number;
-  key: { salt: string; iterations: number; verifier: string } | null;
+  key: { salt: string; iterations: number; verifier: string; wrapped_key?: string | null } | null;
 }
 
 export interface JournalMonthItem {

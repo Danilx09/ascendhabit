@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
   BRAND_COLOR,
@@ -48,6 +49,9 @@ export function ProgressSheet({
           </div>
         </div>
         {h.description && <p className="mt-3 text-sm text-zinc-500">{h.description}</p>}
+        <Link href={`/habits/${h.id}`} className="mt-3 inline-block text-sm font-medium text-brand-500">
+          Ver calendario y estadísticas ›
+        </Link>
 
         <dl className="mt-5 grid grid-cols-3 gap-2 text-center">
           <Stat label="Racha" value={streakLabel(h.current_streak, h.streak_unit)} />

@@ -62,3 +62,14 @@ export function withValue(h: TodayHabit, value: number): TodayHabit {
   const delta = done === h.done_today ? 0 : done ? 1 : -1;
   return { ...h, value_today: value, done_today: done, week_done: Math.max(0, h.week_done + delta) };
 }
+
+export const RECOVERY_REASONS = [
+  { value: "illness", label: "Enfermedad", emoji: "🤒" },
+  { value: "travel", label: "Viaje", emoji: "✈️" },
+  { value: "forgot", label: "Olvido", emoji: "🧠" },
+  { value: "other", label: "Otro", emoji: "💬" },
+] as const;
+
+export function reasonInfo(value: string) {
+  return RECOVERY_REASONS.find((r) => r.value === value) ?? RECOVERY_REASONS[3];
+}

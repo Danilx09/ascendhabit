@@ -107,6 +107,35 @@ Safari → `ascendhabit.vercel.app` → botón Compartir → **Añadir a pantall
 
 ---
 
+## Paso 3 · Panel de Accountability y rescates
+
+### Qué incluye
+- **Socio → vincularse:** cada uno ve su código de 8 caracteres (con botón para compartir) y escribe el del otro.
+- **Panel "Tú vs socio":** % de hoy, % de la semana y racha de Día Perfecto de cada uno, más los hábitos que el socio marcó como visibles.
+- **Pantalla Hoy → "Racha en riesgo":** lista los días fallados de las últimas 48 h que aún se pueden rescatar, con un botón **Pedir rescate** (motivo + mensaje).
+- **Bandeja de rescates:** el socio recibe un aviso en Hoy y aprueba o rechaza desde Socio. Si aprueba, la racha se restaura al instante.
+- La app vuelve a cargar los datos al volver a ella (útil en el iPhone).
+
+### Configuración
+**SQL Editor** → ejecuta `supabase/migrations/20261004000001_partner_recovery.sql`.
+
+---
+
+## Paso 4 · Gestión de hábitos
+
+### Qué incluye
+- **Pestaña Hábitos:** lista de hábitos activos con su racha y frecuencia (🔒 = privado), y una sección de **Archivados** con botón Restaurar.
+- **Detalle del hábito** (`/habits/[id]`): racha actual, mejor racha, % de cumplimiento de los últimos 30 días (4 semanas en los semanales), total completados y **calendario mensual** navegable (hecho, 🛡 rescatado, parcial y fallado, con leyenda).
+- **Editar:** el mismo formulario de creación. Si cambias la meta, el día de hoy usa la nueva y los días pasados conservan la suya.
+- **Archivar:** saca el hábito de Hoy sin perder el historial. **Restaurar** lo reactiva con la racha empezando ese día, para que los días archivados no cuenten como fallos.
+- **Eliminar:** borra el hábito y todo su historial (pide confirmación).
+- Desde la hoja de un hábito en Hoy: enlace "Ver calendario y estadísticas".
+
+### Configuración
+**SQL Editor** → ejecuta `supabase/migrations/20261005000001_habit_management.sql`.
+
+---
+
 ## Estructura
 
 ```
@@ -123,6 +152,10 @@ public/icons/          Iconos de la app (provisionales)
 |---|---|
 | `get_today()` | Todo lo de la pantalla Hoy en una llamada |
 | `log_habit(p_habit_id, p_value)` | Fija el progreso de HOY (fecha calculada en el servidor) |
+| `get_partner_info()` | Mi código de socio y con quién estoy vinculado |
+| `get_recoverable_misses()` | Días fallados que aún se pueden rescatar |
+| `get_habit_detail(p_habit_id, p_month)` | Calendario de un mes + estadísticas de un hábito |
+| `set_habit_archived(p_habit_id, p_archived)` | Archivar o restaurar un hábito |
 | `get_my_summary()` | % de hoy y de la semana, racha de Día Perfecto y hábitos con sus rachas |
 | `get_my_habit_streaks()` | Racha actual y mejor racha de cada hábito |
 | `get_partner_summary()` | Panel de accountability (solo agregados + hábitos compartidos) |

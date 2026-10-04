@@ -59,3 +59,111 @@ export interface Category {
   color: string;
   icon: string | null;
 }
+
+/** Resumen que devuelven get_my_summary() y get_partner_summary() */
+export interface UserSummary {
+  user_id: string;
+  display_name: string | null;
+  today: string;
+  today_scheduled: number;
+  today_done: number;
+  today_pct: number | null;
+  week_pct: number | null;
+  perfect_day_streak: number;
+  perfect_day_best: number;
+  habits: {
+    id: string;
+    name: string;
+    icon: string | null;
+    color: string | null;
+    frequency_type: FrequencyType;
+    scheduled_today: boolean;
+    done_today: boolean;
+    progress_today: number;
+    target: number;
+    unit: string | null;
+    current_streak: number;
+    best_streak: number;
+    streak_unit: "days" | "weeks";
+  }[];
+}
+
+export interface PartnerInfo {
+  invite_code: string;
+  partner_id: string | null;
+  partner_name: string | null;
+  since: string | null;
+}
+
+export type RecoveryReason = "illness" | "travel" | "forgot" | "other";
+export type RecoveryStatus = "pending" | "approved" | "rejected" | "expired";
+
+export interface RecoveryRequest {
+  id: string;
+  direction: "incoming" | "outgoing";
+  habit_id: string;
+  habit_name: string;
+  habit_icon: string | null;
+  missed_date: string;
+  reason: RecoveryReason;
+  message: string | null;
+  status: RecoveryStatus;
+  created_at: string;
+  expires_at: string;
+  resolved_at: string | null;
+}
+
+export interface RecoverableMiss {
+  habit_id: string;
+  habit_name: string;
+  habit_icon: string | null;
+  habit_color: string | null;
+  missed_date: string;
+  used_this_month: number;
+  monthly_max: number;
+  partner_name: string | null;
+}
+
+/** Fila de la tabla habits */
+export interface HabitRow {
+  id: string;
+  name: string;
+  description: string | null;
+  icon: string | null;
+  color: string | null;
+  category_id: string | null;
+  goal_type: GoalType;
+  target_value: number;
+  unit: string | null;
+  frequency_type: FrequencyType;
+  frequency_days: number[] | null;
+  times_per_week: number | null;
+  priority: 1 | 2 | 3;
+  time_of_day: TimeOfDay;
+  share_with_partner: boolean;
+  start_date: string;
+  archived_on: string | null;
+}
+
+export interface CalendarDay {
+  date: string;
+  scheduled: boolean;
+  value: number;
+  target: number;
+  done: boolean;
+  recovered: boolean;
+}
+
+/** Respuesta de get_habit_detail() */
+export interface HabitDetail {
+  habit: HabitRow;
+  today: string;
+  month: string; // primer día del mes mostrado
+  current_streak: number;
+  best_streak: number;
+  streak_unit: "days" | "weeks";
+  rate_30d: number | null;
+  total_done: number;
+  recovered_count: number;
+  days: CalendarDay[];
+}

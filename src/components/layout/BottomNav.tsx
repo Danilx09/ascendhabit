@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 const ITEMS = [
   { href: "/today", label: "Hoy", icon: IconToday },
-  { href: "/habits/new", label: "Nuevo", icon: IconPlus },
+  { href: "/habits", label: "Hábitos", icon: IconHabits },
   { href: "/partner", label: "Socio", icon: IconPartner },
   { href: "/settings", label: "Ajustes", icon: IconSettings },
 ];
@@ -57,11 +57,12 @@ function IconToday() {
     </svg>
   );
 }
-function IconPlus() {
+function IconHabits() {
   return (
     <svg {...svg}>
-      <rect x="3" y="3" width="18" height="18" rx="5" />
-      <path d="M12 8v8M8 12h8" />
+      <rect x="3" y="4" width="18" height="17" rx="3" />
+      <path d="M3 9h18M8 2v4M16 2v4" />
+      <path d="m9 15 2 2 4-4" />
     </svg>
   );
 }

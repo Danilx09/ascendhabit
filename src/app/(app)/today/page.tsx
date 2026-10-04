@@ -1,14 +1,18 @@
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { TodayView } from "@/components/today/TodayView";
-import type { TodayData } from "@/types/app";
+import type { RecoverableMiss, TodayData } from "@/types/app";
 
 export const metadata: Metadata = { title: "Hoy · AscendHabit" };
 
 export default async function TodayPage() {
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("get_today");
-  if (error) throw new Error(error.message);
+  const [today, misses] = await Promise.all([
+    supabase.rpc("get_today"),
+    supabase.rpc("get_recoverable_misses"),
+  ]);
+  if (today.error) throw new Error(today.error.message);
+  if (misses.error) throw new Error(misses.error.message);
 
-  return <TodayView data={data as TodayData} />;
+  return <TodayView data={today.data as TodayData} misses={(misses.data ?? []) as RecoverableMiss[]} />;
 }

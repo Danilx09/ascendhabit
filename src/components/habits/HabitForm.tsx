@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { TIME_OF_DAY_LABEL, WEEKDAYS } from "@/lib/habits";
-import type { Category, FrequencyType, GoalType, HabitTemplate, TimeOfDay } from "@/types/app";
+import type { Category, FrequencyType, GoalType, HabitRow, HabitTemplate, TimeOfDay } from "@/types/app";
 
 const ICONS = ["💧", "🏃", "🧘", "📖", "🎯", "📵", "✍️", "💪", "🥗", "😴", "💊", "🧹", "💰", "🎸", "🌱", "☀️", "🚭", "🧠"];
 const COLORS = ["#6366F1", "#8B5CF6", "#EC4899", "#EF4444", "#F97316", "#EAB308", "#10B981", "#06B6D4", "#3B82F6"];
@@ -59,10 +59,44 @@ const EMPTY: FormState = {
   share_with_partner: false,
 };
 
-export function HabitForm({ templates, categories }: { templates: HabitTemplate[]; categories: Category[] }) {
+function fromRow(h: HabitRow): FormState {
+  return {
+    name: h.name,
+    description: h.description ?? "",
+    icon: h.icon ?? EMPTY.icon,
+    color: h.color ?? EMPTY.color,
+    category_id: h.category_id,
+    goal_type: h.goal_type,
+    target_value: Number(h.target_value),
+    unit: h.unit ?? "",
+    frequency_type: h.frequency_type,
+    frequency_days: h.frequency_days ?? EMPTY.frequency_days,
+    times_per_week: h.times_per_week ?? EMPTY.times_per_week,
+    time_of_day: h.time_of_day,
+    priority: h.priority,
+    share_with_partner: h.share_with_partner,
+  };
+}
+
+export function HabitForm({
+  templates,
+  categories,
+  initial,
+}: {
+  templates: HabitTemplate[];
+  categories: Category[];
+  /** Si viene, el formulario edita ese hábito en lugar de crear uno nuevo */
+  initial?: HabitRow;
+}) {
   const router = useRouter();
   const [supabase] = useState(() => createClient());
-  const [form, setForm] = useState<FormState>(EMPTY);
+  const [form, setForm] = useState<FormState>(() => (initial ? fromRow(initial) : EMPTY));
+  const frequencyChanged =
+    !!initial &&
+    (form.frequency_type !== initial.frequency_type ||
+      (form.frequency_type === "specific_days" &&
+        form.frequency_days.join() !== (initial.frequency_days ?? []).join()) ||
+      (form.frequency_type === "times_per_week" && form.times_per_week !== initial.times_per_week));
   const [templateId, setTemplateId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -116,7 +150,7 @@ export function HabitForm({ templates, categories }: { templates: HabitTemplate[
       return setError("Elige al menos un día.");
 
     setSaving(true);
-    const { error } = await supabase.from("habits").insert({
+    const payload = {
       name: form.name.trim(),
       description: form.description.trim() || null,
       icon: form.icon,
@@ -131,12 +165,15 @@ export function HabitForm({ templates, categories }: { templates: HabitTemplate[
       time_of_day: form.time_of_day,
       priority: form.priority,
       share_with_partner: form.share_with_partner,
-    });
+    };
+    const { error } = initial
+      ? await supabase.from("habits").update(payload).eq("id", initial.id)
+      : await supabase.from("habits").insert(payload);
     if (error) {
       setSaving(false);
       return setError(error.message);
     }
-    router.push("/today");
+    router.push(initial ? `/habits/${initial.id}` : "/today");
     router.refresh();
   }
 
@@ -264,6 +301,11 @@ export function HabitForm({ templates, categories }: { templates: HabitTemplate[
             ))}
           </div>
         )}
+        {frequencyChanged && (
+          <p className="mt-2 rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+            Cambiar la frecuencia recalcula también las rachas de días pasados.
+          </p>
+        )}
         {form.frequency_type === "times_per_week" && (
           <div className="mt-3 flex items-center justify-between rounded-xl bg-zinc-100 px-4 py-2 dark:bg-zinc-800/60">
             <span className="text-sm">Veces por semana</span>
@@ -337,7 +379,7 @@ export function HabitForm({ templates, categories }: { templates: HabitTemplate[
         disabled={saving}
         className="w-full rounded-xl bg-brand-600 py-3.5 font-semibold text-white transition active:scale-[0.98] disabled:opacity-50"
       >
-        {saving ? "Guardando…" : "Crear hábito"}
+        {saving ? "Guardando…" : initial ? "Guardar cambios" : "Crear hábito"}
       </button>
     </form>
   );

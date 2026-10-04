@@ -9,14 +9,17 @@ import { TIME_OF_DAY_LABEL, withValue } from "@/lib/habits";
 import { ProgressRing } from "@/components/ui/ProgressRing";
 import { HabitCard } from "./HabitCard";
 import { ProgressSheet } from "./ProgressSheet";
-import type { TimeOfDay, TodayData, TodayHabit } from "@/types/app";
+import { RecoveryBanner } from "./RecoveryBanner";
+import { useRefreshOnFocus } from "@/hooks/useRefreshOnFocus";
+import type { RecoverableMiss, TimeOfDay, TodayData, TodayHabit } from "@/types/app";
 
 const SECTION_ORDER: TimeOfDay[] = ["morning", "afternoon", "evening", "anytime"];
 
 type Update = { id: string; value: number };
 
-export function TodayView({ data }: { data: TodayData }) {
+export function TodayView({ data, misses }: { data: TodayData; misses: RecoverableMiss[] }) {
   const router = useRouter();
+  useRefreshOnFocus();
   const [supabase] = useState(() => createClient());
   const [, startTransition] = useTransition();
   const [habits, applyOptimistic] = useOptimistic(
@@ -91,6 +94,25 @@ export function TodayView({ data }: { data: TodayData }) {
           </p>
         </div>
       )}
+
+      {/* Solicitudes de rescate que esperan tu respuesta */}
+      {data.pending_recovery_requests > 0 && (
+        <Link
+          href="/partner"
+          className="flex items-center gap-3 rounded-2xl border-2 border-amber-400/60 bg-amber-50 px-4 py-3 dark:bg-amber-500/5"
+        >
+          <span className="text-2xl">🛟</span>
+          <span className="flex-1 text-sm">
+            <span className="block font-semibold">Tu socio necesita tu ayuda</span>
+            {data.pending_recovery_requests === 1
+              ? "Tienes 1 solicitud de rescate pendiente"
+              : `Tienes ${data.pending_recovery_requests} solicitudes de rescate pendientes`}
+          </span>
+          <span className="text-zinc-400">›</span>
+        </Link>
+      )}
+
+      <RecoveryBanner misses={misses} today={data.today} />
 
       {error && (
         <p className="rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-600 dark:text-red-400">{error}</p>

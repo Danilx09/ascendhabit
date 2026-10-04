@@ -1,29 +1,40 @@
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
+import { ConnectPartner } from "@/components/partner/ConnectPartner";
+import { PartnerView } from "@/components/partner/PartnerView";
+import type { PartnerInfo, RecoveryRequest, UserSummary } from "@/types/app";
 
 export const metadata: Metadata = { title: "Socio · AscendHabit" };
 
-// Paso 3: aquí irá el Panel de Accountability y las solicitudes de rescate.
 export default async function PartnerPage() {
   const supabase = await createClient();
-  const { data: auth } = await supabase.auth.getClaims();
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("invite_code")
-    .eq("id", auth?.claims?.sub as string)
-    .single();
+  const { data: info, error } = await supabase.rpc("get_partner_info");
+  if (error) throw new Error(error.message);
+  const partnerInfo = info as PartnerInfo;
+
+  if (!partnerInfo.partner_id) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold tracking-tight">Socio</h1>
+        <ConnectPartner inviteCode={partnerInfo.invite_code} />
+      </div>
+    );
+  }
+
+  const [me, partner, requests] = await Promise.all([
+    supabase.rpc("get_my_summary"),
+    supabase.rpc("get_partner_summary"),
+    supabase.rpc("get_recovery_requests"),
+  ]);
+  const failed = me.error ?? partner.error ?? requests.error;
+  if (failed) throw new Error(failed.message);
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight">Socio</h1>
-      <div className="rounded-3xl border border-dashed border-zinc-300 px-6 py-10 text-center dark:border-zinc-700">
-        <p className="text-4xl">🤝</p>
-        <p className="mt-3 font-semibold">Panel de Accountability</p>
-        <p className="mt-1 text-sm text-zinc-500">Llega en el Paso 3. Mientras tanto, este es tu código de socio:</p>
-        <p className="mt-4 font-mono text-3xl font-bold tracking-[0.25em] text-brand-500">
-          {profile?.invite_code ?? "········"}
-        </p>
-      </div>
-    </div>
+    <PartnerView
+      info={partnerInfo}
+      me={me.data as UserSummary}
+      partner={partner.data as UserSummary}
+      requests={(requests.data ?? []) as RecoveryRequest[]}
+    />
   );
 }

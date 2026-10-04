@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { SettingsForm } from "@/components/settings/SettingsForm";
+import { ReminderSettings } from "@/components/settings/ReminderSettings";
 
 export const metadata: Metadata = { title: "Ajustes · AscendHabit" };
 
@@ -12,14 +13,20 @@ export default async function SettingsPage() {
 
   const { data: profile, error } = await supabase
     .from("profiles")
-    .select("display_name, timezone")
+    .select("display_name, timezone, reminder_enabled, reminder_hour")
     .eq("id", userId)
     .single();
   if (error) throw new Error(error.message);
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-12">
       <h1 className="font-serif text-4xl tracking-tight">Ajustes</h1>
+      <ReminderSettings
+        userId={userId}
+        email={email}
+        initialEnabled={profile.reminder_enabled}
+        initialHour={profile.reminder_hour}
+      />
       <SettingsForm userId={userId} email={email} initialName={profile.display_name ?? ""} initialTimezone={profile.timezone} />
     </div>
   );

@@ -175,6 +175,36 @@ Safari → `ascendhabit.vercel.app` → botón Compartir → **Añadir a pantall
 
 ---
 
+## Fase 7 · Recordatorios diarios por email
+
+### Cómo funciona
+`pg_cron` (cada hora) → `private.dispatch_reminders()` elige a quien tiene su hora de recordatorio *ahora* (en su zona horaria) y aún tiene algo pendiente → `pg_net` hace un POST con un secreto a `/api/reminders` (Vercel) → `nodemailer` envía por el SMTP de Gmail.
+- Máximo un correo al día por persona. No se envía si ya completaste todo (salvo que tengas un rescate por responder).
+- El correo nunca incluye nada del diario; solo avisa si aún no escribiste.
+- Se activa por persona en **Ajustes → Recordatorio diario** (hora por defecto: 8:00 p. m.). Ahí también está el botón **Enviarme un correo de prueba**.
+
+### Configuración (una sola vez)
+1. **Dependencia:** `npm install nodemailer` y `npm install -D @types/nodemailer`.
+2. **Secreto compartido:** genera uno con
+   `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
+3. **Vercel → Settings → Environment Variables** (Production):
+   - `GMAIL_USER` = tu Gmail
+   - `GMAIL_APP_PASSWORD` = una contraseña de aplicación de Google (puede ser nueva: "AscendHabit Vercel")
+   - `REMINDER_SECRET` = el secreto del paso 2
+   - Redespliega para que tomen efecto.
+4. **Supabase → SQL Editor**, ejecuta la migración `20261006000004_email_reminders.sql` y luego:
+   ```sql
+   select vault.create_secret('https://ascendhabit.vercel.app/api/reminders', 'reminder_endpoint');
+   select vault.create_secret('EL_SECRETO_DEL_PASO_2', 'reminder_secret');
+   ```
+5. En la app: Ajustes → activa el recordatorio → **Enviarme un correo de prueba**.
+
+### Si no llega
+- `select * from net._http_response order by created desc limit 5;` en Supabase muestra la respuesta de Vercel (401 = el secreto no coincide; 500 = faltan variables en Vercel).
+- Los logs de la función en Vercel (Deployments → Functions → `/api/reminders`) muestran los errores de Gmail.
+
+---
+
 ## Estructura
 
 ```
@@ -201,6 +231,7 @@ public/icons/          Iconos de la app (provisionales)
 | `setup_journal_key` / `reset_journal_key` | Crear o restablecer la frase del diario |
 | `get_journal_year(p_year)` | Días con entrada por mes de un año |
 | `get_stats(p_weeks)` | Tendencia semanal, por día de la semana, por hábito y resumen |
+| `send_test_reminder()` | Envía ahora un recordatorio de prueba al usuario (máx. 1 cada 2 min) |
 | `get_my_summary()` | % de hoy y de la semana, racha de Día Perfecto y hábitos con sus rachas |
 | `get_my_habit_streaks()` | Racha actual y mejor racha de cada hábito |
 | `get_partner_summary()` | Panel de accountability (solo agregados + hábitos compartidos) |

@@ -2,7 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 // Rutas accesibles sin sesión
-const PUBLIC_PATHS = ["/login", "/auth"];
+// /api/reminders lo llama la base de datos con su propio secreto (no hay sesión)
+const PUBLIC_PATHS = ["/login", "/auth", "/api/reminders"];
 
 // Refresca el token de sesión en cada petición (patrón oficial de Supabase)
 // y protege las rutas privadas.

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { frequencyLabel, streakLabel } from "@/lib/habits";
 import { RestoreButton } from "@/components/habits/RestoreButton";
+import { HabitsTabs } from "@/components/habits/HabitsTabs";
 import type { HabitRow } from "@/types/app";
 
 export const metadata: Metadata = { title: "Hábitos · AscendHabit" };
@@ -25,14 +26,17 @@ export default async function HabitsPage() {
 
   return (
     <div className="space-y-10">
-      <header className="flex items-end justify-between">
-        <div>
-          <p className="eyebrow">{active.length} activos</p>
-          <h1 className="mt-2 font-serif text-4xl tracking-tight">Hábitos</h1>
+      <header className="space-y-6">
+        <div className="flex items-end justify-between">
+          <div>
+            <p className="eyebrow">{active.length} activos</p>
+            <h1 className="mt-2 font-serif text-4xl tracking-tight">Hábitos</h1>
+          </div>
+          <Link href="/habits/new" className="btn btn-primary">
+            Nuevo
+          </Link>
         </div>
-        <Link href="/habits/new" className="btn btn-primary">
-          Nuevo
-        </Link>
+        <HabitsTabs active="list" />
       </header>
 
       {active.length === 0 ? (

@@ -2,12 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { formatLongDate, formatMonth, formatShortDate } from "@/lib/dates";
+import { formatLongDate } from "@/lib/dates";
 import { decryptText, loadRememberedKey } from "@/lib/journal-crypto";
 import { JournalLock } from "./JournalLock";
-import { JournalEditor } from "./JournalEditor";
-import { MOOD_LABELS } from "./constants";
-import type { JournalDay, JournalMonthItem } from "@/types/app";
+import { JournalEditor, type JournalTab } from "./JournalEditor";
+import type { JournalDay } from "@/types/app";
 
 type Status = "checking" | "setup" | "locked" | "unlocked";
 
@@ -15,9 +14,10 @@ type Status = "checking" | "setup" | "locked" | "unlocked";
  * Puerta del diario: mantiene la clave en memoria mientras navegas entre días
  * (el editor se vuelve a montar por fecha, esta vista no).
  */
-export function JournalView({ userId, day, month }: { userId: string; day: JournalDay; month: JournalMonthItem[] }) {
+export function JournalView({ userId, day }: { userId: string; day: JournalDay }) {
   const [key, setKey] = useState<CryptoKey | null>(null);
   const [status, setStatus] = useState<Status>("checking");
+  const [tab, setTab] = useState<JournalTab>("diario");
 
   useEffect(() => {
     if (key) return setStatus("unlocked");
@@ -45,26 +45,46 @@ export function JournalView({ userId, day, month }: { userId: string; day: Journ
   }, [day.key, key, userId]);
 
   const isToday = day.date === day.today;
+  const historyHref = `/journal/history?month=${day.date.slice(0, 7)}`;
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
       <header>
-        <p className="eyebrow">{isToday ? "Hoy" : "Entrada pasada"}</p>
-        <h1 className="mt-2 font-serif text-4xl leading-tight tracking-tight">{formatLongDate(day.date)}</h1>
-        <nav className="mt-4 flex items-center justify-between text-sm text-ink-2">
-          {day.prev_date ? (
-            <Link href={`/journal?date=${day.prev_date}`}>← {formatShortDate(day.prev_date)}</Link>
-          ) : (
-            <span />
-          )}
+        <div className="flex items-center justify-between">
+          <p className="eyebrow">{isToday ? "Hoy" : "Entrada pasada"}</p>
+          <Link href={historyHref} className="text-sm underline underline-offset-4">
+            Ver historial
+          </Link>
+        </div>
+        <h1 className="mt-3 font-serif text-4xl leading-tight tracking-tight">{formatLongDate(day.date)}</h1>
+        <nav className="mt-4 flex items-center justify-between text-sm text-ink-3">
+          {day.prev_date ? <Link href={`/journal?date=${day.prev_date}`}>← Anterior</Link> : <span />}
           {!isToday && (
-            <Link href="/journal" className="underline underline-offset-4">
+            <Link href="/journal" className="text-ink underline underline-offset-4">
               Ir a hoy
             </Link>
           )}
-          {day.next_date ? <Link href={`/journal?date=${day.next_date}`}>{formatShortDate(day.next_date)} →</Link> : <span />}
+          {day.next_date ? <Link href={`/journal?date=${day.next_date}`}>Siguiente →</Link> : <span />}
         </nav>
       </header>
+
+      {/* Pestañas: el diario (texto largo) y la bitácora (chequeo rápido) */}
+      <div className="grid grid-cols-2 border border-line" role="tablist">
+        {(["diario", "bitacora"] as const).map((t, i) => (
+          <button
+            key={t}
+            type="button"
+            role="tab"
+            aria-selected={tab === t}
+            onClick={() => setTab(t)}
+            className={`py-2.5 text-sm transition ${i > 0 ? "border-l border-line" : ""} ${
+              tab === t ? "bg-ink text-bg" : "text-ink-2"
+            }`}
+          >
+            {t === "diario" ? "Diario" : "Bitácora"}
+          </button>
+        ))}
+      </div>
 
       {status === "checking" && <p className="text-sm text-ink-3">Abriendo tu diario…</p>}
 
@@ -80,39 +100,7 @@ export function JournalView({ userId, day, month }: { userId: string; day: Journ
       )}
 
       {status === "unlocked" && key && (
-        <JournalEditor key={day.date} cryptoKey={key} date={day.date} entry={day.entry} />
-      )}
-
-      {/* Historial del mes (sin texto: está cifrado, solo fecha, energía y emoción) */}
-      {month.length > 0 && (
-        <section>
-          <h2 className="eyebrow mb-1">{formatMonth(day.date.slice(0, 7) + "-01")}</h2>
-          <ul className="divide-y divide-line border-y border-line">
-            {month.map((m) => (
-              <li key={m.entry_date}>
-                <Link
-                  href={`/journal?date=${m.entry_date}`}
-                  className={`flex items-center gap-4 py-3 ${m.entry_date === day.date ? "text-ink" : "text-ink-2"}`}
-                >
-                  <span className="w-20 shrink-0 text-sm">{formatShortDate(m.entry_date)}</span>
-                  <span className="flex flex-1 items-center gap-1" aria-label={m.mood_score ? `Energía ${m.mood_score} de 5` : "Sin energía registrada"}>
-                    {[1, 2, 3, 4, 5].map((n) => (
-                      <span
-                        key={n}
-                        className={`h-1.5 w-1.5 rounded-full ${m.mood_score && n <= m.mood_score ? "bg-ink" : "bg-line"}`}
-                      />
-                    ))}
-                    {m.mood_score && <span className="sr-only">{MOOD_LABELS[m.mood_score]}</span>}
-                  </span>
-                  <span className="truncate text-sm italic">{m.primary_emotion ?? ""}</span>
-                  <span className="shrink-0 text-xs text-ink-3">
-                    {[m.has_journal && "diario", m.has_reflection && "bitácora"].filter(Boolean).join(" · ")}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
+        <JournalEditor key={day.date} cryptoKey={key} date={day.date} isToday={isToday} entry={day.entry} tab={tab} />
       )}
     </div>
   );

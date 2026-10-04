@@ -12,15 +12,30 @@ const AUTOSAVE_MS = 900;
 type Values = Record<TextField, string> & { mood_score: number | null; primary_emotion: string };
 type Field = keyof Values;
 type SaveState = "idle" | "pending" | "saving" | "saved" | "error";
+export type JournalTab = "diario" | "bitacora";
 
 /** Editor del día: diario libre + bitácora. Autoguarda solo lo que cambió, ya cifrado. */
-export function JournalEditor({ cryptoKey, date, entry }: { cryptoKey: CryptoKey; date: string; entry: JournalEntry | null }) {
+export function JournalEditor({
+  cryptoKey,
+  date,
+  isToday,
+  entry,
+  tab,
+}: {
+  cryptoKey: CryptoKey;
+  date: string;
+  isToday: boolean;
+  entry: JournalEntry | null;
+  tab: JournalTab;
+}) {
   const [supabase] = useState(() => createClient());
   const [values, setValues] = useState<Values | null>(null);
   const [undecryptable, setUndecryptable] = useState<TextField[]>([]);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [customEmotion, setCustomEmotion] = useState("");
+  // Los días pasados con texto se abren en modo lectura
+  const [reading, setReading] = useState(!isToday && !!entry?.free_journal);
 
   const latest = useRef<Values | null>(null);
   const dirty = useRef<Set<Field>>(new Set());
@@ -129,7 +144,7 @@ export function JournalEditor({ cryptoKey, date, entry }: { cryptoKey: CryptoKey
           : "Cifrado de extremo a extremo";
 
   return (
-    <div className="space-y-14">
+    <div className="space-y-6">
       <p className="sticky top-0 z-10 -mx-6 bg-bg/90 px-6 py-2 text-right text-xs text-ink-3 backdrop-blur" aria-live="polite">
         {status}
       </p>
@@ -140,20 +155,50 @@ export function JournalEditor({ cryptoKey, date, entry }: { cryptoKey: CryptoKey
         </p>
       )}
 
-      {/* Diario abierto */}
-      <section>
-        <h2 className="eyebrow">Diario</h2>
-        <AutoTextarea
-          value={values.free_journal}
-          onChange={(v) => update("free_journal", v)}
-          placeholder="Escribe lo que pasa por tu cabeza…"
-          minRows={8}
-          className="ruled mt-3 font-serif text-[1.125rem]"
-          ariaLabel="Diario del día"
-        />
-      </section>
+      {/* Diario abierto: texto largo */}
+      {tab === "diario" && (
+        <section>
+          {reading && values.free_journal ? (
+            <>
+              <article className="space-y-5 font-serif text-[1.15rem] leading-[1.8]">
+                {values.free_journal.split(/\n{2,}/).map((para, i) => (
+                  <p key={i} className="whitespace-pre-line">
+                    {para}
+                  </p>
+                ))}
+              </article>
+              <div className="mt-8 flex items-center justify-between border-t border-line pt-4 text-xs text-ink-3">
+                <span>{wordCount(values.free_journal)} palabras</span>
+                <button type="button" onClick={() => setReading(false)} className="text-sm text-ink underline underline-offset-4">
+                  Editar
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <AutoTextarea
+                value={values.free_journal}
+                onChange={(v) => update("free_journal", v)}
+                placeholder={isToday ? "¿Qué pasó hoy? Escribe sin filtro…" : "Escribe sobre este día…"}
+                minRows={14}
+                className="ruled font-serif text-[1.15rem]"
+                ariaLabel="Diario del día"
+              />
+              <div className="mt-3 flex items-center justify-between text-xs text-ink-3">
+                <span>{wordCount(values.free_journal)} palabras</span>
+                {!isToday && values.free_journal && (
+                  <button type="button" onClick={() => setReading(true)} className="underline underline-offset-4">
+                    Modo lectura
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+        </section>
+      )}
 
       {/* Bitácora emocional */}
+      {tab === "bitacora" && (
       <section className="space-y-10">
         <div>
           <h2 className="eyebrow">Bitácora</h2>
@@ -228,8 +273,14 @@ export function JournalEditor({ cryptoKey, date, entry }: { cryptoKey: CryptoKey
           </div>
         ))}
       </section>
+      )}
     </div>
   );
+}
+
+function wordCount(text: string) {
+  const t = text.trim();
+  return t ? t.split(/\s+/).length : 0;
 }
 
 /** Textarea que crece con el contenido */

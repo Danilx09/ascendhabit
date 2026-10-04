@@ -198,3 +198,39 @@ export interface JournalMonthItem {
   has_journal: boolean;
   has_reflection: boolean;
 }
+
+export interface JournalYearItem {
+  month: string; // YYYY-MM-01
+  entries: number;
+  journal_days: number;
+  avg_mood: number | null;
+}
+
+/** Respuesta de get_stats() */
+export interface StatsData {
+  today: string;
+  weeks: number;
+  weekly: {
+    week_start: string;
+    scheduled: number;
+    done: number;
+    pct: number | null;
+    avg_mood: number | null;
+    journal_days: number;
+    is_current: boolean;
+  }[];
+  weekday: { isodow: number; scheduled: number; done: number; pct: number | null }[];
+  habits: {
+    id: string;
+    name: string;
+    icon: string | null;
+    rate_30d: number | null;
+    current_streak: number;
+    best_streak: number;
+    streak_unit: "days" | "weeks";
+  }[];
+  perfect_day_streak: number;
+  perfect_day_best: number;
+  perfect_days_30d: number;
+  active_days_30d: number;
+}

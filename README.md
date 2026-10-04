@@ -156,6 +156,25 @@ Safari → `ascendhabit.vercel.app` → botón Compartir → **Añadir a pantall
 
 ---
 
+## Fase 6 · Diario extenso con calendario + Progreso
+
+### Diario
+- Pestañas **Diario | Bitácora**. El Diario es una página pautada para escribir largo (hasta ~150.000 caracteres por día), con contador de palabras y autoguardado cifrado.
+- Los días pasados se abren en **modo lectura**; con **Editar** se pueden modificar.
+- **Ver historial** abre un calendario: año ‹ ›, tira de 12 meses con los días escritos de cada uno y la rejilla del mes (relleno = diario escrito, contorno = solo bitácora). Tocar un día lo abre.
+
+### Progreso (Hábitos → Progreso)
+- Resumen: % de esta semana, tendencia (últimas 4 semanas completas frente a las 4 anteriores), días perfectos en 30 días y racha de Día Perfecto.
+- Gráficos: cumplimiento semanal (12 semanas), energía media semanal (de la bitácora) y cumplimiento por día de la semana. Al tocar una barra se ve su valor, y cada gráfico tiene "Ver tabla".
+- Ranking por hábito con su % a 30 días y sus rachas.
+
+### Configuración
+**SQL Editor** → ejecuta, en orden:
+1. `supabase/migrations/20261006000002_journal_history.sql`
+2. `supabase/migrations/20261006000003_stats.sql`
+
+---
+
 ## Estructura
 
 ```
@@ -180,6 +199,8 @@ public/icons/          Iconos de la app (provisionales)
 | `get_journal_day(p_date)` | Entrada de un día + navegación + parámetros de la clave |
 | `get_journal_month(p_month)` | Resumen del mes (energía, emoción; sin texto) |
 | `setup_journal_key` / `reset_journal_key` | Crear o restablecer la frase del diario |
+| `get_journal_year(p_year)` | Días con entrada por mes de un año |
+| `get_stats(p_weeks)` | Tendencia semanal, por día de la semana, por hábito y resumen |
 | `get_my_summary()` | % de hoy y de la semana, racha de Día Perfecto y hábitos con sus rachas |
 | `get_my_habit_streaks()` | Racha actual y mejor racha de cada hábito |
 | `get_partner_summary()` | Panel de accountability (solo agregados + hábitos compartidos) |

@@ -2,6 +2,8 @@
 
 import { useRefreshOnFocus } from "@/hooks/useRefreshOnFocus";
 import { formatNumber, streakLabel } from "@/lib/habits";
+import { useT } from "@/lib/i18n/client";
+import type { Dict } from "@/lib/i18n";
 import { RecoveryInbox } from "./RecoveryInbox";
 import { EndPartnership } from "./EndPartnership";
 import type { PartnerInfo, RecoveryRequest, UserSummary } from "@/types/app";
@@ -18,26 +20,27 @@ export function PartnerView({
   requests: RecoveryRequest[];
 }) {
   useRefreshOnFocus();
-  const partnerName = partner.display_name ?? info.partner_name ?? "Tu socio";
+  const t = useT();
+  const partnerName = partner.display_name ?? info.partner_name ?? t.common.yourPartnerCap;
 
   return (
     <div className="space-y-10">
       <header>
-        <p className="eyebrow">Panel de Accountability</p>
+        <p className="eyebrow">{t.partner.panel}</p>
         <h1 className="mt-2 font-serif text-4xl tracking-tight">
-          Tú <span className="italic text-ink-3">y</span> {partnerName}
+          {t.partner.you} <span className="italic text-ink-3">{t.partner.and}</span> {partnerName}
         </h1>
       </header>
 
-      <Duel me={me} partner={partner} partnerName={partnerName} />
+      <Duel me={me} partner={partner} partnerName={partnerName} t={t} />
 
       <RecoveryInbox requests={requests} partnerName={partnerName} today={me.today} />
 
       <section>
-        <h2 className="eyebrow mb-1">Lo que comparte {partnerName}</h2>
+        <h2 className="eyebrow mb-1">{t.partner.shares(partnerName)}</h2>
         {partner.habits.length === 0 ? (
           <p className="border-y border-line py-6 text-center text-sm text-ink-3">
-            {partnerName} no comparte el detalle de sus hábitos. Su % y sus rachas sí los cuentan todos.
+            {t.partner.notShared(partnerName)}
           </p>
         ) : (
           <ul className="divide-y divide-line border-y border-line">
@@ -50,17 +53,17 @@ export function PartnerView({
                     <span className="block truncate text-[15px]">{h.name}</span>
                     <span className="text-xs text-ink-3">
                       {!h.scheduled_today
-                        ? "Hoy no toca"
+                        ? t.partner.notToday
                         : quantitative
-                          ? `${formatNumber(h.progress_today)} / ${formatNumber(h.target)} ${h.unit ?? ""}`
+                          ? `${formatNumber(h.progress_today, t.intl)} / ${formatNumber(h.target, t.intl)} ${h.unit ?? ""}`
                           : h.done_today
-                            ? "Hecho hoy"
-                            : "Pendiente hoy"}
-                      {h.current_streak > 0 && ` — ${streakLabel(h.current_streak, h.streak_unit)}`}
+                            ? t.partner.doneToday
+                            : t.partner.pendingToday}
+                      {h.current_streak > 0 && ` — ${streakLabel(h.current_streak, h.streak_unit, t)}`}
                     </span>
                   </span>
                   <span
-                    aria-label={h.done_today ? "Hecho" : "Pendiente"}
+                    aria-label={h.done_today ? t.partner.done : t.partner.pending}
                     className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs ${
                       h.done_today ? "bg-ink text-bg" : "border border-ink-3"
                     }`}
@@ -79,32 +82,32 @@ export function PartnerView({
   );
 }
 
-function Duel({ me, partner, partnerName }: { me: UserSummary; partner: UserSummary; partnerName: string }) {
+function Duel({ me, partner, partnerName, t }: { me: UserSummary; partner: UserSummary; partnerName: string; t: Dict }) {
   const myPct = me.today_pct ?? 0;
   const theirPct = partner.today_pct ?? 0;
   const verdict =
     me.today_pct === null && partner.today_pct === null
-      ? "Hoy ninguno tiene hábitos programados."
+      ? t.partner.none
       : myPct === theirPct
         ? myPct === 100
-          ? "Los dos con Día Perfecto."
-          : "Empatados por ahora."
+          ? t.partner.bothPerfect
+          : t.partner.tied
         : myPct > theirPct
-          ? `Vas por delante hoy. Anima a ${partnerName}.`
-          : `${partnerName} va por delante hoy. Tu turno.`;
+          ? t.partner.ahead(partnerName)
+          : t.partner.behind(partnerName);
 
   return (
     <section>
       <div className="grid grid-cols-2 border-y border-line">
-        <Player label="Tú" summary={me} />
-        <Player label={partnerName} summary={partner} left />
+        <Player label={t.partner.you} summary={me} t={t} />
+        <Player label={partnerName} summary={partner} t={t} left />
       </div>
       <p className="mt-4 font-serif text-lg italic text-ink-2">{verdict}</p>
     </section>
   );
 }
 
-function Player({ label, summary, left = false }: { label: string; summary: UserSummary; left?: boolean }) {
+function Player({ label, summary, t, left = false }: { label: string; summary: UserSummary; t: Dict; left?: boolean }) {
   const pct = summary.today_pct ?? 0;
   return (
     <div className={`py-5 ${left ? "border-l border-line pl-5" : "pr-5"}`}>
@@ -117,15 +120,15 @@ function Player({ label, summary, left = false }: { label: string; summary: User
       </div>
       <dl className="mt-4 space-y-1 text-sm">
         <div className="flex justify-between">
-          <dt className="text-ink-3">Semana</dt>
+          <dt className="text-ink-3">{t.partner.week}</dt>
           <dd className="tabular-nums">{summary.week_pct === null ? "–" : `${summary.week_pct}%`}</dd>
         </div>
         <div className="flex justify-between">
-          <dt className="text-ink-3">Día Perfecto</dt>
+          <dt className="text-ink-3">{t.partner.perfectDay}</dt>
           <dd className="tabular-nums">{summary.perfect_day_streak}</dd>
         </div>
         <div className="flex justify-between">
-          <dt className="text-ink-3">Mejor racha</dt>
+          <dt className="text-ink-3">{t.partner.bestStreak}</dt>
           <dd className="tabular-nums">{summary.perfect_day_best}</dd>
         </div>
       </dl>

@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { formatNumber, frequencyLabel, isQuantitative, stepFor, streakLabel } from "@/lib/habits";
+import { formatNumber, frequencyLabel, isQuantitative, stepFor, streakLabel, unitOf } from "@/lib/habits";
+import { useT } from "@/lib/i18n/client";
 import { Sheet } from "@/components/ui/Sheet";
 import type { TodayHabit } from "@/types/app";
 
@@ -15,10 +16,11 @@ export function ProgressSheet({
   onClose: () => void;
   onSave: (value: number) => void;
 }) {
+  const t = useT();
   const [value, setValue] = useState(h.value_today);
   const quantitative = isQuantitative(h);
   const step = stepFor(h);
-  const unit = h.unit ?? (h.goal_type === "duration" ? "min" : "");
+  const unit = unitOf(h);
 
   return (
     <Sheet onClose={onClose}>
@@ -26,27 +28,27 @@ export function ProgressSheet({
         <span className="mono text-3xl">{h.icon ?? "·"}</span>
         <div className="min-w-0">
           <h2 className="font-serif text-2xl leading-tight">{h.name}</h2>
-          <p className="mt-1 text-sm text-ink-3">{frequencyLabel(h)}</p>
+          <p className="mt-1 text-sm text-ink-3">{frequencyLabel(h, t)}</p>
         </div>
       </div>
       {h.description && <p className="mt-4 text-sm text-ink-2">{h.description}</p>}
 
       <dl className="mt-6 grid grid-cols-3 border-y border-line text-center">
-        <Stat label="Racha" value={streakLabel(h.current_streak, h.streak_unit)} />
-        <Stat label="Mejor" value={streakLabel(h.best_streak, h.streak_unit)} border />
+        <Stat label={t.sheet.streak} value={streakLabel(h.current_streak, h.streak_unit, t)} />
+        <Stat label={t.sheet.best} value={streakLabel(h.best_streak, h.streak_unit, t)} border />
         <Stat
-          label="Semana"
+          label={t.sheet.week}
           value={h.frequency_type === "times_per_week" ? `${h.week_done}/${h.times_per_week}` : `${h.week_done}`}
           border
         />
       </dl>
 
       {!h.scheduled_today ? (
-        <p className="mt-6 text-center text-sm text-ink-3">Este hábito no está programado para hoy.</p>
+        <p className="mt-6 text-center text-sm text-ink-3">{t.sheet.notScheduled}</p>
       ) : quantitative ? (
         <>
           <div className="mt-8 flex items-center justify-center gap-6">
-            <RoundButton onClick={() => setValue((v) => Math.max(0, v - step))} label="Restar">
+            <RoundButton onClick={() => setValue((v) => Math.max(0, v - step))} label={t.sheet.subtract}>
               −
             </RoundButton>
             <label className="flex flex-col items-center">
@@ -59,20 +61,18 @@ export function ProgressSheet({
                 onChange={(e) => setValue(e.target.value === "" ? 0 : Number(e.target.value))}
                 className="w-28 bg-transparent text-center font-serif text-5xl tabular-nums outline-none"
               />
-              <span className="mt-1 text-sm text-ink-3">
-                de {formatNumber(h.target_value)} {unit}
-              </span>
+              <span className="mt-1 text-sm text-ink-3">{t.sheet.of(formatNumber(h.target_value, t.intl), unit)}</span>
             </label>
-            <RoundButton onClick={() => setValue((v) => v + step)} label="Sumar">
+            <RoundButton onClick={() => setValue((v) => v + step)} label={t.sheet.add}>
               +
             </RoundButton>
           </div>
           <div className="mt-8 grid grid-cols-2 gap-3">
             <button type="button" onClick={() => onSave(h.target_value)} className="btn btn-ghost">
-              Completar meta
+              {t.sheet.completeGoal}
             </button>
             <button type="button" onClick={() => onSave(Math.max(0, value))} className="btn btn-primary">
-              Guardar
+              {t.sheet.save}
             </button>
           </div>
         </>
@@ -82,12 +82,12 @@ export function ProgressSheet({
           onClick={() => onSave(h.done_today ? 0 : 1)}
           className={`btn mt-8 w-full ${h.done_today ? "btn-ghost" : "btn-primary"}`}
         >
-          {h.done_today ? "Marcar como pendiente" : "Marcar como hecho"}
+          {h.done_today ? t.sheet.markPending : t.sheet.markDone}
         </button>
       )}
 
       <Link href={`/habits/${h.id}`} className="mt-6 block text-center text-sm text-ink-2 underline underline-offset-4">
-        Ver calendario y estadísticas
+        {t.sheet.viewStats}
       </Link>
     </Sheet>
   );

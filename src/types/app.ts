@@ -43,7 +43,10 @@ export interface TodayData {
 export interface HabitTemplate {
   id: string;
   name: string;
+  name_en: string | null;
   description: string | null;
+  description_en: string | null;
+  unit_en: string | null;
   category_name: string | null;
   icon: string | null;
   goal_type: GoalType;
@@ -56,6 +59,7 @@ export interface HabitTemplate {
 export interface Category {
   id: string;
   name: string;
+  name_en: string | null;
   color: string;
   icon: string | null;
 }

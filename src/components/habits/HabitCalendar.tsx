@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { addMonths, formatMonth, formatShortDate, isoWeekday } from "@/lib/dates";
-import { formatNumber } from "@/lib/habits";
+import { formatNumber, unitOf } from "@/lib/habits";
+import type { Dict } from "@/lib/i18n";
 import type { CalendarDay, HabitDetail } from "@/types/app";
-
-const WEEK_HEADER = ["L", "M", "X", "J", "V", "S", "D"];
 
 type DayState = "done" | "recovered" | "partial" | "missed" | "pending" | "off" | "future";
 
@@ -17,25 +16,15 @@ function stateOf(day: CalendarDay, today: string, weekly: boolean): DayState {
   return weekly ? "off" : "missed"; // en hábitos semanales un día sin registro no es un fallo
 }
 
-const STATE_LABEL: Record<DayState, string> = {
-  done: "Hecho",
-  recovered: "Rescatado por tu socio",
-  partial: "Parcial",
-  missed: "Fallado",
-  pending: "Pendiente",
-  off: "No programado",
-  future: "",
-};
-
 /**
  * Calendario mensual monocromo. Cada estado se distingue por FORMA:
  * círculo lleno = hecho · contorno doble = rescatado · contorno discontinuo = parcial
  * · barra diagonal = fallado. Hay leyenda y cada día describe su estado (title/aria-label).
  */
-export function HabitCalendar({ detail }: { detail: HabitDetail }) {
+export function HabitCalendar({ detail, t }: { detail: HabitDetail; t: Dict }) {
   const { habit, days, today, month } = detail;
   const weekly = habit.frequency_type === "times_per_week";
-  const unit = habit.unit ?? (habit.goal_type === "duration" ? "min" : "");
+  const unit = unitOf(habit);
   const leading = days.length ? isoWeekday(days[0].date) - 1 : 0;
   const currentMonth = today.slice(0, 7) + "-01";
   const canGoNext = month < currentMonth;
@@ -43,12 +32,12 @@ export function HabitCalendar({ detail }: { detail: HabitDetail }) {
   return (
     <section>
       <div className="mb-4 flex items-center justify-between">
-        <Link href={`?month=${addMonths(month, -1)}`} scroll={false} aria-label="Mes anterior" className="px-2 py-1 text-ink-2">
+        <Link href={`?month=${addMonths(month, -1)}`} scroll={false} aria-label={t.calendar.prevMonth} className="px-2 py-1 text-ink-2">
           ←
         </Link>
-        <h2 className="font-serif text-xl">{formatMonth(month)}</h2>
+        <h2 className="font-serif text-xl">{formatMonth(month, t.intl)}</h2>
         {canGoNext ? (
-          <Link href={`?month=${addMonths(month, 1)}`} scroll={false} aria-label="Mes siguiente" className="px-2 py-1 text-ink-2">
+          <Link href={`?month=${addMonths(month, 1)}`} scroll={false} aria-label={t.calendar.nextMonth} className="px-2 py-1 text-ink-2">
             →
           </Link>
         ) : (
@@ -57,8 +46,8 @@ export function HabitCalendar({ detail }: { detail: HabitDetail }) {
       </div>
 
       <div className="grid grid-cols-7 gap-y-2 text-center">
-        {WEEK_HEADER.map((w) => (
-          <span key={w} className="eyebrow pb-1">
+        {t.weekdays.short.map((w, i) => (
+          <span key={i} className="eyebrow pb-1">
             {w}
           </span>
         ))}
@@ -70,9 +59,9 @@ export function HabitCalendar({ detail }: { detail: HabitDetail }) {
           const n = Number(day.date.slice(8));
           const progress =
             habit.goal_type !== "boolean" && day.value > 0
-              ? ` · ${formatNumber(day.value)}/${formatNumber(day.target)} ${unit}`
+              ? ` · ${formatNumber(day.value, t.intl)}/${formatNumber(day.target, t.intl)} ${unit}`
               : "";
-          const tip = `${formatShortDate(day.date)}${STATE_LABEL[state] ? ` · ${STATE_LABEL[state]}` : ""}${progress}`;
+          const tip = `${formatShortDate(day.date, t.intl)}${t.calendar.states[state] ? ` · ${t.calendar.states[state]}` : ""}${progress}`;
 
           const shape =
             state === "done"
@@ -106,14 +95,14 @@ export function HabitCalendar({ detail }: { detail: HabitDetail }) {
       {/* Leyenda: siempre visible, con las mismas formas */}
       <ul className="mt-6 flex flex-wrap justify-center gap-x-5 gap-y-2 border-t border-line pt-4 text-xs text-ink-3">
         <li className="flex items-center gap-2">
-          <span className="h-3 w-3 rounded-full bg-ink" /> Hecho
+          <span className="h-3 w-3 rounded-full bg-ink" /> {t.calendar.legend.done}
         </li>
         <li className="flex items-center gap-2">
-          <span className="h-3 w-3 rounded-full border border-ink outline outline-1 outline-offset-1 outline-ink" /> Rescatado
+          <span className="h-3 w-3 rounded-full border border-ink outline outline-1 outline-offset-1 outline-ink" /> {t.calendar.legend.recovered}
         </li>
         {habit.goal_type !== "boolean" && (
           <li className="flex items-center gap-2">
-            <span className="h-3 w-3 rounded-full border border-dashed border-ink" /> Parcial
+            <span className="h-3 w-3 rounded-full border border-dashed border-ink" /> {t.calendar.legend.partial}
           </li>
         )}
         {!weekly && (
@@ -121,7 +110,7 @@ export function HabitCalendar({ detail }: { detail: HabitDetail }) {
             <span className="relative grid h-3 w-3 place-items-center">
               <span className="absolute h-px w-3 -rotate-45 bg-ink-3" />
             </span>
-            Fallado
+            {t.calendar.legend.missed}
           </li>
         )}
       </ul>

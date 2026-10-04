@@ -1,10 +1,8 @@
 import Link from "next/link";
 import { formatMonth, formatShortDate, isoWeekday } from "@/lib/dates";
-import { MOOD_LABELS } from "./constants";
+import type { Dict } from "@/lib/i18n";
 import type { JournalMonthItem, JournalYearItem } from "@/types/app";
 
-const WEEK_HEADER = ["L", "M", "X", "J", "V", "S", "D"];
-const MONTHS_SHORT = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 
 function daysInMonth(monthStart: string) {
   const [y, m] = monthStart.split("-").map(Number);
@@ -20,7 +18,9 @@ export function JournalCalendar({
   monthStart,
   entries,
   yearSummary,
+  t,
 }: {
+  t: Dict;
   today: string;
   monthStart: string;
   entries: JournalMonthItem[];
@@ -41,17 +41,15 @@ export function JournalCalendar({
       {/* Año */}
       <section>
         <div className="flex items-center justify-between">
-          <Link href={monthLink(year - 1, 12)} aria-label="Año anterior" className="px-2 py-1 text-ink-2">
+          <Link href={monthLink(year - 1, 12)} aria-label={t.history.prevYear} className="px-2 py-1 text-ink-2">
             ←
           </Link>
           <div className="text-center">
             <p className="font-serif text-3xl tabular-nums">{year}</p>
-            <p className="text-xs text-ink-3">
-              {yearCount} {yearCount === 1 ? "día escrito" : "días escritos"}
-            </p>
+            <p className="text-xs text-ink-3">{t.history.daysWritten(yearCount)}</p>
           </div>
           {year < currentYear ? (
-            <Link href={monthLink(year + 1, 1)} aria-label="Año siguiente" className="px-2 py-1 text-ink-2">
+            <Link href={monthLink(year + 1, 1)} aria-label={t.history.nextYear} className="px-2 py-1 text-ink-2">
               →
             </Link>
           ) : (
@@ -61,7 +59,7 @@ export function JournalCalendar({
 
         {/* Tira de meses: el número es cuántos días tienen entrada */}
         <div className="mt-5 grid grid-cols-6 border-l border-t border-line">
-          {MONTHS_SHORT.map((label, i) => {
+          {t.weekdays.monthsShort.map((label, i) => {
             const mStart = `${year}-${String(i + 1).padStart(2, "0")}-01`;
             const count = yearSummary.find((y) => y.month === mStart)?.entries ?? 0;
             const future = mStart > todayMonth;
@@ -90,10 +88,10 @@ export function JournalCalendar({
 
       {/* Mes */}
       <section>
-        <h2 className="mb-4 text-center font-serif text-2xl">{formatMonth(monthStart)}</h2>
+        <h2 className="mb-4 text-center font-serif text-2xl">{formatMonth(monthStart, t.intl)}</h2>
         <div className="grid grid-cols-7 gap-y-2 text-center">
-          {WEEK_HEADER.map((w) => (
-            <span key={w} className="eyebrow pb-1">
+          {t.weekdays.short.map((w, i) => (
+            <span key={i} className="eyebrow pb-1">
               {w}
             </span>
           ))}
@@ -104,8 +102,10 @@ export function JournalCalendar({
             const date = `${ym}-${String(i + 1).padStart(2, "0")}`;
             const e = byDate.get(date);
             const future = date > today;
-            const label = `${formatShortDate(date)}${
-              e ? ` · ${e.has_journal ? "diario" : "bitácora"}${e.mood_score ? ` · energía ${e.mood_score}` : ""}` : ""
+            const label = `${formatShortDate(date, t.intl)}${
+              e
+                ? ` · ${e.has_journal ? t.history.diary : t.history.log}${e.mood_score ? ` · ${t.history.energyWord(e.mood_score)}` : ""}`
+                : ""
             }`;
             const shape = e?.has_journal
               ? "bg-ink text-bg"
@@ -131,10 +131,10 @@ export function JournalCalendar({
 
         <ul className="mt-6 flex justify-center gap-6 border-t border-line pt-4 text-xs text-ink-3">
           <li className="flex items-center gap-2">
-            <span className="h-3 w-3 rounded-full bg-ink" /> Diario escrito
+            <span className="h-3 w-3 rounded-full bg-ink" /> {t.history.legendJournal}
           </li>
           <li className="flex items-center gap-2">
-            <span className="h-3 w-3 rounded-full border border-ink" /> Solo bitácora
+            <span className="h-3 w-3 rounded-full border border-ink" /> {t.history.legendLog}
           </li>
         </ul>
       </section>
@@ -142,15 +142,15 @@ export function JournalCalendar({
       {/* Lista del mes */}
       {entries.length > 0 ? (
         <section>
-          <h2 className="eyebrow mb-1">Entradas de {formatMonth(monthStart).toLowerCase()}</h2>
+          <h2 className="eyebrow mb-1">{t.history.entriesOf(formatMonth(monthStart, t.intl))}</h2>
           <ul className="divide-y divide-line border-y border-line">
             {entries.map((m) => (
               <li key={m.entry_date}>
                 <Link href={`/journal?date=${m.entry_date}`} className="flex items-center gap-4 py-3">
-                  <span className="w-20 shrink-0 text-sm">{formatShortDate(m.entry_date)}</span>
+                  <span className="w-20 shrink-0 text-sm">{formatShortDate(m.entry_date, t.intl)}</span>
                   <span
                     className="flex items-center gap-1"
-                    aria-label={m.mood_score ? `Energía ${m.mood_score} de 5, ${MOOD_LABELS[m.mood_score]}` : "Sin energía registrada"}
+                    aria-label={m.mood_score ? t.history.energyAria(m.mood_score, t.journal.mood[m.mood_score]) : t.history.noEnergy}
                   >
                     {[1, 2, 3, 4, 5].map((n) => (
                       <span key={n} className={`h-1.5 w-1.5 rounded-full ${m.mood_score && n <= m.mood_score ? "bg-ink" : "bg-line"}`} />
@@ -158,7 +158,7 @@ export function JournalCalendar({
                   </span>
                   <span className="min-w-0 flex-1 truncate text-sm italic text-ink-2">{m.primary_emotion ?? ""}</span>
                   <span className="shrink-0 text-xs text-ink-3">
-                    {[m.has_journal && "diario", m.has_reflection && "bitácora"].filter(Boolean).join(" · ")}
+                    {[m.has_journal && t.history.diary, m.has_reflection && t.history.log].filter(Boolean).join(" · ")}
                   </span>
                 </Link>
               </li>
@@ -166,7 +166,7 @@ export function JournalCalendar({
           </ul>
         </section>
       ) : (
-        <p className="border-y border-line py-8 text-center text-sm text-ink-3">No hay entradas este mes.</p>
+        <p className="border-y border-line py-8 text-center text-sm text-ink-3">{t.history.none}</p>
       )}
     </div>
   );

@@ -1,10 +1,14 @@
+"use client";
+
 import Link from "next/link";
+import { useT } from "@/lib/i18n/client";
 
 /** Pestañas "Lista | Progreso" dentro de la sección Hábitos */
 export function HabitsTabs({ active }: { active: "list" | "stats" }) {
+  const t = useT();
   const items = [
-    { key: "list", href: "/habits", label: "Lista" },
-    { key: "stats", href: "/stats", label: "Progreso" },
+    { key: "list", href: "/habits", label: t.habits.tabs.list },
+    { key: "stats", href: "/stats", label: t.habits.tabs.stats },
   ] as const;
   return (
     <div className="grid grid-cols-2 border border-line">

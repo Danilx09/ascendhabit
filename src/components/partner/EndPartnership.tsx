@@ -4,9 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { formatShortDate } from "@/lib/dates";
+import { useT } from "@/lib/i18n/client";
 
 export function EndPartnership({ partnerName, since }: { partnerName: string; since: string | null }) {
   const router = useRouter();
+  const t = useT();
   const [supabase] = useState(() => createClient());
   const [confirming, setConfirming] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -20,20 +22,20 @@ export function EndPartnership({ partnerName, since }: { partnerName: string; si
 
   return (
     <div className="border-t border-line pt-6 text-center">
-      {since && <p className="text-xs text-ink-3">Socios desde el {formatShortDate(since.slice(0, 10))}</p>}
+      {since && <p className="text-xs text-ink-3">{t.endPartner.since(formatShortDate(since.slice(0, 10), t.intl))}</p>}
       {!confirming ? (
         <button type="button" onClick={() => setConfirming(true)} className="mt-2 text-xs text-ink-3 underline underline-offset-4">
-          Terminar vínculo con {partnerName}
+          {t.endPartner.endWith(partnerName)}
         </button>
       ) : (
         <div className="mt-4 border border-ink p-4 text-left">
-          <p className="text-sm">Las solicitudes pendientes se cancelan y dejaréis de ver el progreso del otro.</p>
+          <p className="text-sm">{t.endPartner.warn}</p>
           <div className="mt-4 grid grid-cols-2 gap-3">
             <button type="button" onClick={() => setConfirming(false)} className="btn btn-ghost">
-              Cancelar
+              {t.common.cancel}
             </button>
             <button type="button" disabled={loading} onClick={end} className="btn btn-primary">
-              Terminar
+              {t.endPartner.end}
             </button>
           </div>
         </div>

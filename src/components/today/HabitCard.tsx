@@ -1,6 +1,7 @@
 "use client";
 
 import { formatNumber, frequencyLabel, isQuantitative, progressLabel, stepFor } from "@/lib/habits";
+import { useT } from "@/lib/i18n/client";
 import type { TodayHabit } from "@/types/app";
 
 /** Una línea de la libreta: icono, nombre, detalle y control a la derecha */
@@ -15,16 +16,17 @@ export function HabitCard({
   onOpen: () => void;
   disabled?: boolean;
 }) {
+  const t = useT();
   const quantitative = isQuantitative(h);
   const step = stepFor(h);
   const ratio = Math.min(1, h.value_today / h.target_value);
   const weekly = h.frequency_type === "times_per_week";
 
   const detail = weekly
-    ? `${h.week_done}/${h.times_per_week} esta semana`
+    ? t.habitRow.thisWeek(h.week_done, h.times_per_week ?? 0)
     : quantitative
-      ? progressLabel(h)
-      : frequencyLabel(h);
+      ? progressLabel(h, t)
+      : frequencyLabel(h, t);
 
   function onAction() {
     if (disabled) return;
@@ -43,13 +45,13 @@ export function HabitCard({
             <span className={`truncate text-[15px] ${h.done_today ? "text-ink-3 line-through decoration-1" : ""}`}>
               {h.name}
             </span>
-            {h.priority === 1 && <span className="shrink-0 text-[10px] tracking-[0.14em] text-ink-3">ALTA</span>}
+            {h.priority === 1 && <span className="shrink-0 text-[10px] tracking-[0.14em] text-ink-3">{t.habitRow.high}</span>}
           </span>
           <span className="mt-0.5 flex items-center gap-2 text-xs text-ink-3">
             <span className="truncate">{detail}</span>
             {h.current_streak > 0 && (
               <span className="shrink-0 tabular-nums text-ink-2">
-                — {h.current_streak} {h.streak_unit === "weeks" ? "sem" : h.current_streak === 1 ? "día" : "días"}
+                — {h.streak_unit === "weeks" ? t.units.weeksShort(h.current_streak) : t.units.days(h.current_streak)}
               </span>
             )}
           </span>
@@ -65,7 +67,7 @@ export function HabitCard({
         type="button"
         onClick={onAction}
         disabled={disabled}
-        aria-label={h.done_today ? `Desmarcar ${h.name}` : `Registrar ${h.name}`}
+        aria-label={h.done_today ? t.habitRow.unmark(h.name) : t.habitRow.log(h.name)}
         className={`grid h-10 w-10 shrink-0 place-items-center rounded-full text-xs tabular-nums transition active:scale-90 disabled:opacity-40 ${
           h.done_today ? "bg-ink text-bg" : "border border-ink-3 text-ink-2 hover:border-ink"
         }`}
@@ -75,7 +77,7 @@ export function HabitCard({
             <path d="m5 12 5 5 9-10" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         ) : quantitative ? (
-          `+${formatNumber(step)}`
+          `+${formatNumber(step, t.intl)}`
         ) : null}
       </button>
     </div>

@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { forgetKeys } from "@/lib/journal-crypto";
 import { ThemeSelector } from "@/components/ui/ThemeToggle";
+import { LanguageSelector } from "@/components/ui/LanguageSelector";
+import { translateDbError } from "@/lib/i18n";
+import { useT } from "@/lib/i18n/client";
 
 export function SettingsForm({
   userId,
@@ -18,6 +21,7 @@ export function SettingsForm({
   initialTimezone: string;
 }) {
   const router = useRouter();
+  const t = useT();
   const [supabase] = useState(() => createClient());
   const [name, setName] = useState(initialName);
   const [timezone, setTimezone] = useState(initialTimezone);
@@ -27,14 +31,16 @@ export function SettingsForm({
   const [deviceZone, setDeviceZone] = useState<string | null>(null);
   useEffect(() => setDeviceZone(Intl.DateTimeFormat().resolvedOptions().timeZone), []);
 
-  const zones = useMemo(() => {
+  // La lista completa depende del navegador: se carga tras montar (el servidor no la conoce igual)
+  const [allZones, setAllZones] = useState<string[]>([]);
+  useEffect(() => {
     try {
-      const all = Intl.supportedValuesOf("timeZone");
-      return all.includes(timezone) ? all : [timezone, ...all];
+      setAllZones(Intl.supportedValuesOf("timeZone"));
     } catch {
-      return [timezone];
+      setAllZones([]);
     }
-  }, [timezone]);
+  }, []);
+  const zones = allZones.includes(timezone) ? allZones : [timezone, ...allZones];
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -46,7 +52,7 @@ export function SettingsForm({
       .eq("id", userId);
     if (error) {
       setStatus("error");
-      setMessage(error.message);
+      setMessage(translateDbError(error.message, t));
       return;
     }
     setStatus("saved");
@@ -63,25 +69,30 @@ export function SettingsForm({
   return (
     <div className="space-y-12">
       <section>
-        <p className="eyebrow mb-3">Apariencia</p>
+        <p className="eyebrow mb-3">{t.settings.appearance}</p>
         <ThemeSelector />
       </section>
 
+      <section>
+        <p className="eyebrow mb-3">{t.settings.language}</p>
+        <LanguageSelector userId={userId} />
+      </section>
+
       <form onSubmit={save} className="space-y-6">
-        <p className="eyebrow">Perfil</p>
+        <p className="eyebrow">{t.settings.profile}</p>
         <label className="block">
-          <span className="text-sm text-ink-2">Tu nombre</span>
+          <span className="text-sm text-ink-2">{t.settings.name}</span>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
             maxLength={50}
-            placeholder="Cómo te verá tu socio"
+            placeholder={t.settings.namePh}
             className="field"
           />
         </label>
 
         <label className="block">
-          <span className="text-sm text-ink-2">Zona horaria</span>
+          <span className="text-sm text-ink-2">{t.settings.timezone}</span>
           <select value={timezone} onChange={(e) => setTimezone(e.target.value)} className="field bg-bg">
             {zones.map((z) => (
               <option key={z} value={z}>
@@ -90,12 +101,12 @@ export function SettingsForm({
             ))}
           </select>
           <span className="mt-2 block text-xs text-ink-3">
-            Define cuándo empieza y termina tu día para las rachas.
+            {t.settings.tzHint}
             {deviceZone && deviceZone !== timezone && (
               <>
                 {" "}
                 <button type="button" onClick={() => setTimezone(deviceZone)} className="text-ink underline underline-offset-4">
-                  Usar la de este dispositivo ({deviceZone})
+                  {t.settings.useDevice(deviceZone)}
                 </button>
               </>
             )}
@@ -104,15 +115,15 @@ export function SettingsForm({
 
         {message && <p className="border-l-2 border-ink pl-3 text-sm">{message}</p>}
         <button type="submit" disabled={status === "saving"} className="btn btn-primary w-full">
-          {status === "saving" ? "Guardando…" : status === "saved" ? "Guardado" : "Guardar cambios"}
+          {status === "saving" ? t.settings.saving : status === "saved" ? t.settings.saved : t.settings.saveChanges}
         </button>
       </form>
 
       <section className="border-t border-line pt-6">
-        <p className="eyebrow">Sesión</p>
+        <p className="eyebrow">{t.settings.session}</p>
         <p className="mt-2 text-sm">{email}</p>
         <button type="button" onClick={signOut} className="btn btn-ghost mt-5 w-full">
-          Cerrar sesión
+          {t.settings.signOut}
         </button>
       </section>
     </div>

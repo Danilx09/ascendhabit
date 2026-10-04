@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { decryptText, encryptText } from "@/lib/journal-crypto";
-import { EMOTIONS, MOOD_LABELS, REFLECTION_QUESTIONS, type TextField } from "./constants";
+import { QUESTION_FIELDS, type TextField } from "./constants";
+import { formatClock } from "@/lib/dates";
+import { useT } from "@/lib/i18n/client";
 import type { JournalEntry } from "@/types/app";
 
 const TEXT_FIELDS: TextField[] = ["free_journal", "q_gratitude", "q_challenge", "q_learning"];
@@ -28,6 +30,8 @@ export function JournalEditor({
   entry: JournalEntry | null;
   tab: JournalTab;
 }) {
+  const t = useT();
+  const EMOTIONS = t.journal.emotions;
   const [supabase] = useState(() => createClient());
   const [values, setValues] = useState<Values | null>(null);
   const [undecryptable, setUndecryptable] = useState<TextField[]>([]);
@@ -71,7 +75,10 @@ export function JournalEditor({
     return () => {
       cancelled = true;
     };
-  }, [cryptoKey, entry]);
+    // Se compara por id + fecha de guardado, no por objeto: un refresco de la página
+    // trae un objeto nuevo con el mismo contenido y no debe pisar lo que estás escribiendo.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cryptoKey, entry?.id, entry?.updated_at]);
 
   // 2) Guardar: cifra los textos modificados y envía solo esos campos
   const flush = useCallback(async () => {
@@ -99,12 +106,12 @@ export function JournalEditor({
         return;
       }
       setSaveState(dirty.current.size ? "pending" : "saved");
-      setSavedAt(new Intl.DateTimeFormat("es", { hour: "2-digit", minute: "2-digit" }).format(new Date()));
+      setSavedAt(formatClock(new Date(), t.intl));
     })();
     saving.current = run;
     await run;
     saving.current = null;
-  }, [cryptoKey, date, supabase]);
+  }, [cryptoKey, date, supabase, t.intl]);
 
   function update<F extends Field>(field: F, value: Values[F]) {
     if (!latest.current) return;
@@ -132,16 +139,16 @@ export function JournalEditor({
     };
   }, [flush]);
 
-  if (!values) return <p className="text-sm text-ink-3">Descifrando…</p>;
+  if (!values) return <p className="text-sm text-ink-3">{t.journal.decrypting}</p>;
 
   const status =
     saveState === "saving" || saveState === "pending"
-      ? "Guardando…"
+      ? t.journal.saving
       : saveState === "error"
-        ? "Sin conexión · se guardará al reintentar"
+        ? t.journal.offline
         : saveState === "saved" && savedAt
-          ? `Guardado · ${savedAt}`
-          : "Cifrado de extremo a extremo";
+          ? t.journal.savedAt(savedAt)
+          : t.journal.e2e;
 
   return (
     <div className="space-y-6">
@@ -151,7 +158,7 @@ export function JournalEditor({
 
       {undecryptable.length > 0 && (
         <p className="border-l-2 border-ink pl-3 text-sm">
-          Algunos textos de este día no se pudieron descifrar (¿se cambió la frase?). Si escribes encima, se reemplazarán.
+          {t.journal.undecryptable}
         </p>
       )}
 
@@ -168,9 +175,9 @@ export function JournalEditor({
                 ))}
               </article>
               <div className="mt-8 flex items-center justify-between border-t border-line pt-4 text-xs text-ink-3">
-                <span>{wordCount(values.free_journal)} palabras</span>
+                <span>{t.journal.words(wordCount(values.free_journal))}</span>
                 <button type="button" onClick={() => setReading(false)} className="text-sm text-ink underline underline-offset-4">
-                  Editar
+                  {t.journal.edit}
                 </button>
               </div>
             </>
@@ -179,16 +186,16 @@ export function JournalEditor({
               <AutoTextarea
                 value={values.free_journal}
                 onChange={(v) => update("free_journal", v)}
-                placeholder={isToday ? "¿Qué pasó hoy? Escribe sin filtro…" : "Escribe sobre este día…"}
+                placeholder={isToday ? t.journal.phToday : t.journal.phPast}
                 minRows={14}
                 className="ruled font-serif text-[1.15rem]"
-                ariaLabel="Diario del día"
+                ariaLabel={t.journal.ariaDiary}
               />
               <div className="mt-3 flex items-center justify-between text-xs text-ink-3">
-                <span>{wordCount(values.free_journal)} palabras</span>
+                <span>{t.journal.words(wordCount(values.free_journal))}</span>
                 {!isToday && values.free_journal && (
                   <button type="button" onClick={() => setReading(true)} className="underline underline-offset-4">
-                    Modo lectura
+                    {t.journal.readMode}
                   </button>
                 )}
               </div>
@@ -201,13 +208,13 @@ export function JournalEditor({
       {tab === "bitacora" && (
       <section className="space-y-10">
         <div>
-          <h2 className="eyebrow">Bitácora</h2>
-          <p className="mt-2 font-serif text-2xl">¿Cómo estuvo tu día por dentro?</p>
+          <h2 className="eyebrow">{t.journal.logTitle}</h2>
+          <p className="mt-2 font-serif text-2xl">{t.journal.logQuestion}</p>
         </div>
 
         <div>
-          <p className="text-sm text-ink-2">Nivel de energía</p>
-          <div className="mt-3 grid grid-cols-5 border border-line" role="radiogroup" aria-label="Nivel de energía">
+          <p className="text-sm text-ink-2">{t.journal.energy}</p>
+          <div className="mt-3 grid grid-cols-5 border border-line" role="radiogroup" aria-label={t.journal.energy}>
             {[1, 2, 3, 4, 5].map((n) => (
               <button
                 key={n}
@@ -220,14 +227,14 @@ export function JournalEditor({
                 }`}
               >
                 <span className="font-serif text-xl tabular-nums">{n}</span>
-                <span className="mt-0.5 text-[10px] uppercase tracking-[0.1em] opacity-70">{MOOD_LABELS[n]}</span>
+                <span className="mt-0.5 text-[10px] uppercase tracking-[0.1em] opacity-70">{t.journal.mood[n]}</span>
               </button>
             ))}
           </div>
         </div>
 
         <div>
-          <p className="text-sm text-ink-2">Emoción principal</p>
+          <p className="text-sm text-ink-2">{t.journal.emotion}</p>
           <div className="mt-3 flex flex-wrap gap-2">
             {EMOTIONS.map((e) => (
               <button
@@ -253,22 +260,22 @@ export function JournalEditor({
               setCustomEmotion(v);
               update("primary_emotion", v.toLowerCase());
             }}
-            placeholder="u otra palabra…"
+            placeholder={t.journal.otherWord}
             className="field mt-3 text-sm"
           />
         </div>
 
-        {REFLECTION_QUESTIONS.map((q) => (
-          <div key={q.field}>
-            <p className="eyebrow">{q.title}</p>
-            <p className="mt-2 font-serif text-lg leading-snug">{q.prompt}</p>
+        {QUESTION_FIELDS.map((field) => (
+          <div key={field}>
+            <p className="eyebrow">{t.journal.questions[field].title}</p>
+            <p className="mt-2 font-serif text-lg leading-snug">{t.journal.questions[field].prompt}</p>
             <AutoTextarea
-              value={values[q.field]}
-              onChange={(v) => update(q.field, v)}
+              value={values[field]}
+              onChange={(v) => update(field, v)}
               placeholder="…"
               minRows={2}
               className="field mt-2"
-              ariaLabel={q.prompt}
+              ariaLabel={t.journal.questions[field].prompt}
             />
           </div>
         ))}

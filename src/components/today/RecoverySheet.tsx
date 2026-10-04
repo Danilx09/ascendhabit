@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/client";
 import { relativeDay } from "@/lib/dates";
 import { RECOVERY_REASONS } from "@/lib/habits";
 import { Sheet } from "@/components/ui/Sheet";
+import { translateDbError } from "@/lib/i18n";
+import { useT } from "@/lib/i18n/client";
 import type { RecoverableMiss, RecoveryReason } from "@/types/app";
 
 export function RecoverySheet({
@@ -20,12 +22,13 @@ export function RecoverySheet({
   onSent: () => void;
 }) {
   const router = useRouter();
+  const t = useT();
   const [supabase] = useState(() => createClient());
   const [reason, setReason] = useState<RecoveryReason | null>(null);
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const partner = miss.partner_name ?? "tu socio";
+  const partner = miss.partner_name ?? t.common.yourPartner;
   const left = miss.monthly_max - miss.used_this_month;
 
   async function send() {
@@ -39,30 +42,30 @@ export function RecoverySheet({
       p_message: message.trim() || null,
     });
     setSending(false);
-    if (error) return setError(error.message);
+    if (error) return setError(translateDbError(error.message, t));
     onSent();
     router.refresh();
   }
 
   return (
     <Sheet onClose={onClose}>
-      <p className="eyebrow">Solicitar rescate de racha</p>
+      <p className="eyebrow">{t.recovery.eyebrow}</p>
       <h2 className="mt-2 font-serif text-2xl">
-        {miss.habit_name}, {relativeDay(miss.missed_date, today)}
+        {miss.habit_name}, {relativeDay(miss.missed_date, today, t)}
       </h2>
 
-      <p className="eyebrow mb-3 mt-8">Motivo</p>
+      <p className="eyebrow mb-3 mt-8">{t.recovery.reason}</p>
       <div className="grid grid-cols-2 gap-2">
         {RECOVERY_REASONS.map((r) => (
           <button
-            key={r.value}
+            key={r}
             type="button"
-            onClick={() => setReason(r.value)}
+            onClick={() => setReason(r)}
             className={`border px-3 py-2.5 text-sm transition ${
-              reason === r.value ? "border-ink bg-ink text-bg" : "border-line text-ink-2"
+              reason === r ? "border-ink bg-ink text-bg" : "border-line text-ink-2"
             }`}
           >
-            {r.label}
+            {t.recovery.reasons[r]}
           </button>
         ))}
       </div>
@@ -72,18 +75,15 @@ export function RecoverySheet({
         onChange={(e) => setMessage(e.target.value)}
         maxLength={280}
         rows={3}
-        placeholder={`Cuéntale a ${partner} qué pasó (opcional)`}
+        placeholder={t.recovery.messagePh(partner)}
         className="field mt-6 resize-none"
       />
 
-      <p className="mt-3 text-xs text-ink-3">
-        Te {left === 1 ? "queda 1 rescate" : `quedan ${left} rescates`} este mes para este hábito. {partner} tiene 72 h
-        para responder.
-      </p>
+      <p className="mt-3 text-xs text-ink-3">{t.recovery.left(left, partner.charAt(0).toUpperCase() + partner.slice(1))}</p>
       {error && <p className="mt-3 border-l-2 border-ink pl-3 text-sm">{error}</p>}
 
       <button type="button" disabled={!reason || sending} onClick={send} className="btn btn-primary mt-6 w-full">
-        {sending ? "Enviando…" : `Enviar a ${partner}`}
+        {sending ? t.common.sending : t.recovery.send(partner)}
       </button>
     </Sheet>
   );

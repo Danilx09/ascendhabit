@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "AscendHabit",
     short_name: "AscendHabit",
-    description: "Construye hábitos con tu socio de accountability.",
+    description: "Hábitos individuales. Compromiso compartido. · Individual habits. Shared commitment.",
     start_url: "/",
     display: "standalone",
     background_color: "#ffffff",

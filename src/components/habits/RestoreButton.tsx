@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useT } from "@/lib/i18n/client";
 
 export function RestoreButton({ habitId }: { habitId: string }) {
   const router = useRouter();
+  const t = useT();
   const [supabase] = useState(() => createClient());
   const [loading, setLoading] = useState(false);
 
@@ -23,7 +25,7 @@ export function RestoreButton({ habitId }: { habitId: string }) {
       disabled={loading}
       className="shrink-0 text-sm underline underline-offset-4 disabled:opacity-40"
     >
-      {loading ? "…" : "Restaurar"}
+      {loading ? "…" : t.habits.restore}
     </button>
   );
 }

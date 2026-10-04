@@ -1,9 +1,9 @@
-import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { JournalView } from "@/components/journal/JournalView";
+import { pageTitle } from "@/lib/i18n/metadata";
 import type { JournalDay } from "@/types/app";
 
-export const metadata: Metadata = { title: "Diario · AscendHabit" };
+export const generateMetadata = pageTitle("journal");
 
 export default async function JournalPage({ searchParams }: { searchParams: Promise<{ date?: string }> }) {
   const { date } = await searchParams;

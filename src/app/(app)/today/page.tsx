@@ -1,9 +1,9 @@
-import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { TodayView } from "@/components/today/TodayView";
+import { pageTitle } from "@/lib/i18n/metadata";
 import type { RecoverableMiss, TodayData } from "@/types/app";
 
-export const metadata: Metadata = { title: "Hoy · AscendHabit" };
+export const generateMetadata = pageTitle("today");
 
 export default async function TodayPage() {
   const supabase = await createClient();

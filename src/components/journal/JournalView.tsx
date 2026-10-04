@@ -6,6 +6,7 @@ import { formatLongDate } from "@/lib/dates";
 import { decryptText, loadRememberedKey } from "@/lib/journal-crypto";
 import { JournalLock } from "./JournalLock";
 import { JournalEditor, type JournalTab } from "./JournalEditor";
+import { useT } from "@/lib/i18n/client";
 import type { JournalDay } from "@/types/app";
 
 type Status = "checking" | "setup" | "locked" | "unlocked";
@@ -15,6 +16,7 @@ type Status = "checking" | "setup" | "locked" | "unlocked";
  * (el editor se vuelve a montar por fecha, esta vista no).
  */
 export function JournalView({ userId, day }: { userId: string; day: JournalDay }) {
+  const t = useT();
   const [key, setKey] = useState<CryptoKey | null>(null);
   const [status, setStatus] = useState<Status>("checking");
   const [tab, setTab] = useState<JournalTab>("diario");
@@ -51,42 +53,42 @@ export function JournalView({ userId, day }: { userId: string; day: JournalDay }
     <div className="space-y-8">
       <header>
         <div className="flex items-center justify-between">
-          <p className="eyebrow">{isToday ? "Hoy" : "Entrada pasada"}</p>
+          <p className="eyebrow">{isToday ? t.journal.today : t.journal.past}</p>
           <Link href={historyHref} className="text-sm underline underline-offset-4">
-            Ver historial
+            {t.journal.history}
           </Link>
         </div>
-        <h1 className="mt-3 font-serif text-4xl leading-tight tracking-tight">{formatLongDate(day.date)}</h1>
+        <h1 className="mt-3 font-serif text-4xl leading-tight tracking-tight">{formatLongDate(day.date, t.intl)}</h1>
         <nav className="mt-4 flex items-center justify-between text-sm text-ink-3">
-          {day.prev_date ? <Link href={`/journal?date=${day.prev_date}`}>← Anterior</Link> : <span />}
+          {day.prev_date ? <Link href={`/journal?date=${day.prev_date}`}>{t.journal.prev}</Link> : <span />}
           {!isToday && (
             <Link href="/journal" className="text-ink underline underline-offset-4">
-              Ir a hoy
+              {t.journal.goToday}
             </Link>
           )}
-          {day.next_date ? <Link href={`/journal?date=${day.next_date}`}>Siguiente →</Link> : <span />}
+          {day.next_date ? <Link href={`/journal?date=${day.next_date}`}>{t.journal.next}</Link> : <span />}
         </nav>
       </header>
 
       {/* Pestañas: el diario (texto largo) y la bitácora (chequeo rápido) */}
       <div className="grid grid-cols-2 border border-line" role="tablist">
-        {(["diario", "bitacora"] as const).map((t, i) => (
+        {(["diario", "bitacora"] as const).map((tabKey, i) => (
           <button
-            key={t}
+            key={tabKey}
             type="button"
             role="tab"
-            aria-selected={tab === t}
-            onClick={() => setTab(t)}
+            aria-selected={tab === tabKey}
+            onClick={() => setTab(tabKey)}
             className={`py-2.5 text-sm transition ${i > 0 ? "border-l border-line" : ""} ${
-              tab === t ? "bg-ink text-bg" : "text-ink-2"
+              tab === tabKey ? "bg-ink text-bg" : "text-ink-2"
             }`}
           >
-            {t === "diario" ? "Diario" : "Bitácora"}
+            {t.journal.tabs[tabKey]}
           </button>
         ))}
       </div>
 
-      {status === "checking" && <p className="text-sm text-ink-3">Abriendo tu diario…</p>}
+      {status === "checking" && <p className="text-sm text-ink-3">{t.journal.opening}</p>}
 
       {(status === "setup" || status === "locked") && (
         <JournalLock

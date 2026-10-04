@@ -3,28 +3,18 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { TIME_OF_DAY_LABEL, WEEKDAYS } from "@/lib/habits";
+import { ISO_DAYS, TIME_SLOTS } from "@/lib/habits";
+import { translateDbError } from "@/lib/i18n";
+import { useLocale, useT } from "@/lib/i18n/client";
 import type { Category, FrequencyType, GoalType, HabitRow, HabitTemplate, TimeOfDay } from "@/types/app";
 
 const ICONS = ["💧", "🏃", "🧘", "📖", "🎯", "📵", "✍️", "💪", "🥗", "😴", "💊", "🧹", "💰", "🎸", "🌱", "☀️", "🚭", "🧠"];
 // El color se conserva en la BD, pero la interfaz es monocroma y no lo muestra
 const COLORS = ["#6366F1", "#8B5CF6", "#EC4899", "#EF4444", "#F97316", "#EAB308", "#10B981", "#06B6D4", "#3B82F6"];
 
-const GOALS: { value: GoalType; label: string }[] = [
-  { value: "boolean", label: "Sí / No" },
-  { value: "count", label: "Cantidad" },
-  { value: "duration", label: "Tiempo" },
-];
-const FREQUENCIES: { value: FrequencyType; label: string }[] = [
-  { value: "daily", label: "Diario" },
-  { value: "specific_days", label: "Días" },
-  { value: "times_per_week", label: "Semanal" },
-];
-const PRIORITIES: { value: 1 | 2 | 3; label: string }[] = [
-  { value: 1, label: "Alta" },
-  { value: 2, label: "Media" },
-  { value: 3, label: "Baja" },
-];
+const GOALS: GoalType[] = ["boolean", "count", "duration"];
+const FREQUENCIES: FrequencyType[] = ["daily", "specific_days", "times_per_week"];
+const PRIORITIES: (1 | 2 | 3)[] = [1, 2, 3];
 
 interface FormState {
   name: string;
@@ -90,6 +80,8 @@ export function HabitForm({
   initial?: HabitRow;
 }) {
   const router = useRouter();
+  const t = useT();
+  const locale = useLocale();
   const [supabase] = useState(() => createClient());
   const [form, setForm] = useState<FormState>(() => (initial ? fromRow(initial) : EMPTY));
   const frequencyChanged =
@@ -105,21 +97,24 @@ export function HabitForm({
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
 
-  function applyTemplate(t: HabitTemplate) {
-    const cat = categories.find((c) => c.name === t.category_name);
-    setTemplateId(t.id);
+  const en = locale === "en";
+  const categoryName = (c: Category) => (en && c.name_en) || c.name;
+
+  function applyTemplate(tpl: HabitTemplate) {
+    const cat = categories.find((c) => c.name === tpl.category_name);
+    setTemplateId(tpl.id);
     setForm({
       ...EMPTY,
-      name: t.name,
-      description: t.description ?? "",
-      icon: t.icon ?? EMPTY.icon,
+      name: (en && tpl.name_en) || tpl.name,
+      description: (en && tpl.description_en) || tpl.description || "",
+      icon: tpl.icon ?? EMPTY.icon,
       color: cat?.color ?? EMPTY.color,
       category_id: cat?.id ?? null,
-      goal_type: t.goal_type,
-      target_value: t.target_value,
-      unit: t.unit ?? "",
-      frequency_type: t.frequency_type,
-      time_of_day: t.time_of_day,
+      goal_type: tpl.goal_type,
+      target_value: tpl.target_value,
+      unit: (en && tpl.unit_en) || tpl.unit || "",
+      frequency_type: tpl.frequency_type,
+      time_of_day: tpl.time_of_day,
     });
   }
 
@@ -145,10 +140,10 @@ export function HabitForm({
     e.preventDefault();
     setError(null);
 
-    if (!form.name.trim()) return setError("Ponle un nombre al hábito.");
-    if (form.goal_type !== "boolean" && !(form.target_value > 0)) return setError("La meta debe ser mayor que 0.");
+    if (!form.name.trim()) return setError(t.form.errName);
+    if (form.goal_type !== "boolean" && !(form.target_value > 0)) return setError(t.form.errTarget);
     if (form.frequency_type === "specific_days" && form.frequency_days.length === 0)
-      return setError("Elige al menos un día.");
+      return setError(t.form.errDays);
 
     setSaving(true);
     const payload = {
@@ -172,7 +167,7 @@ export function HabitForm({
       : await supabase.from("habits").insert(payload);
     if (error) {
       setSaving(false);
-      return setError(error.message);
+      return setError(translateDbError(error.message, t));
     }
     router.push(initial ? `/habits/${initial.id}` : "/today");
     router.refresh();
@@ -183,19 +178,19 @@ export function HabitForm({
       {/* Plantillas */}
       {templates.length > 0 && (
         <section>
-          <Label>Empieza con una plantilla</Label>
+          <Label>{t.form.template}</Label>
           <div className="-mx-6 flex gap-2 overflow-x-auto px-6 pb-1 [scrollbar-width:none]">
-            {templates.map((t) => (
+            {templates.map((tpl) => (
               <button
-                key={t.id}
+                key={tpl.id}
                 type="button"
-                onClick={() => applyTemplate(t)}
+                onClick={() => applyTemplate(tpl)}
                 className={`flex shrink-0 items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm transition ${
-                  templateId === t.id ? "border-ink bg-ink text-bg" : "border-line text-ink-2"
+                  templateId === tpl.id ? "border-ink bg-ink text-bg" : "border-line text-ink-2"
                 }`}
               >
-                <span className="mono">{t.icon}</span>
-                {t.name}
+                <span className="mono">{tpl.icon}</span>
+                {(en && tpl.name_en) || tpl.name}
               </button>
             ))}
           </div>
@@ -209,7 +204,7 @@ export function HabitForm({
           <input
             value={form.name}
             onChange={(e) => set("name", e.target.value)}
-            placeholder="Nombre del hábito"
+            placeholder={t.form.namePh}
             maxLength={80}
             className="field font-serif text-2xl"
           />
@@ -232,8 +227,8 @@ export function HabitForm({
 
       {/* Meta */}
       <section>
-        <Label>Meta</Label>
-        <Segmented options={GOALS} value={form.goal_type} onChange={changeGoal} />
+        <Label>{t.form.goal}</Label>
+        <Segmented options={GOALS.map((g) => ({ value: g, label: t.form.goals[g] }))} value={form.goal_type} onChange={changeGoal} />
         {form.goal_type !== "boolean" && (
           <div className="mt-4 flex items-end gap-4">
             <input
@@ -246,12 +241,12 @@ export function HabitForm({
               className="field w-24 text-center font-serif text-xl"
             />
             {form.goal_type === "duration" ? (
-              <span className="pb-3 text-ink-2">minutos al día</span>
+              <span className="pb-3 text-ink-2">{t.form.minutesPerDay}</span>
             ) : (
               <input
                 value={form.unit}
                 onChange={(e) => set("unit", e.target.value)}
-                placeholder="unidad (vasos, páginas…)"
+                placeholder={t.form.unitPh}
                 maxLength={20}
                 className="field"
               />
@@ -262,34 +257,38 @@ export function HabitForm({
 
       {/* Frecuencia */}
       <section>
-        <Label>Frecuencia</Label>
-        <Segmented options={FREQUENCIES} value={form.frequency_type} onChange={(v) => set("frequency_type", v)} />
+        <Label>{t.form.frequency}</Label>
+        <Segmented
+          options={FREQUENCIES.map((f) => ({ value: f, label: t.form.freqs[f] }))}
+          value={form.frequency_type}
+          onChange={(v) => set("frequency_type", v)}
+        />
         {form.frequency_type === "specific_days" && (
           <div className="mt-4 flex justify-between">
-            {WEEKDAYS.map((d) => (
+            {ISO_DAYS.map((iso) => (
               <button
-                key={d.iso}
+                key={iso}
                 type="button"
-                aria-label={d.long}
-                aria-pressed={form.frequency_days.includes(d.iso)}
-                onClick={() => toggleDay(d.iso)}
+                aria-label={t.weekdays.long[iso - 1]}
+                aria-pressed={form.frequency_days.includes(iso)}
+                onClick={() => toggleDay(iso)}
                 className={`h-10 w-10 rounded-full text-sm transition ${
-                  form.frequency_days.includes(d.iso) ? "bg-ink text-bg" : "border border-line text-ink-3"
+                  form.frequency_days.includes(iso) ? "bg-ink text-bg" : "border border-line text-ink-3"
                 }`}
               >
-                {d.short}
+                {t.weekdays.short[iso - 1]}
               </button>
             ))}
           </div>
         )}
         {frequencyChanged && (
           <p className="mt-3 border-l-2 border-ink pl-3 text-xs text-ink-2">
-            Cambiar la frecuencia recalcula también las rachas de días pasados.
+            {t.form.freqWarn}
           </p>
         )}
         {form.frequency_type === "times_per_week" && (
           <div className="mt-4 flex items-center justify-between border-b border-line pb-3">
-            <span className="text-sm text-ink-2">Veces por semana</span>
+            <span className="text-sm text-ink-2">{t.form.timesPerWeek}</span>
             <div className="flex items-center gap-4">
               <StepButton onClick={() => set("times_per_week", Math.max(1, form.times_per_week - 1))}>−</StepButton>
               <span className="w-4 text-center font-serif text-xl tabular-nums">{form.times_per_week}</span>
@@ -301,11 +300,11 @@ export function HabitForm({
 
       {/* Momento del día */}
       <section>
-        <Label>Momento del día</Label>
+        <Label>{t.form.timeOfDay}</Label>
         <div className="flex flex-wrap gap-2">
-          {(Object.keys(TIME_OF_DAY_LABEL) as TimeOfDay[]).map((t) => (
-            <Chip key={t} active={form.time_of_day === t} onClick={() => set("time_of_day", t)}>
-              {TIME_OF_DAY_LABEL[t]}
+          {TIME_SLOTS.map((slot) => (
+            <Chip key={slot} active={form.time_of_day === slot} onClick={() => set("time_of_day", slot)}>
+              {t.time[slot]}
             </Chip>
           ))}
         </div>
@@ -313,14 +312,18 @@ export function HabitForm({
 
       {/* Prioridad */}
       <section>
-        <Label>Prioridad</Label>
-        <Segmented options={PRIORITIES} value={form.priority} onChange={(v) => set("priority", v)} />
+        <Label>{t.form.priority}</Label>
+        <Segmented
+          options={PRIORITIES.map((p) => ({ value: p, label: t.form.priorities[p] }))}
+          value={form.priority}
+          onChange={(v) => set("priority", v)}
+        />
       </section>
 
       {/* Categoría */}
       {categories.length > 0 && (
         <section>
-          <Label>Categoría</Label>
+          <Label>{t.form.category}</Label>
           <div className="flex flex-wrap gap-2">
             {categories.map((c) => (
               <Chip
@@ -328,7 +331,7 @@ export function HabitForm({
                 active={form.category_id === c.id}
                 onClick={() => set("category_id", form.category_id === c.id ? null : c.id)}
               >
-                {c.name}
+                {categoryName(c)}
               </Chip>
             ))}
           </div>
@@ -339,9 +342,9 @@ export function HabitForm({
       <section>
         <label className="flex cursor-pointer items-start justify-between gap-6 border-y border-line py-4">
           <span>
-            <span className="block text-[15px]">Visible para mi socio</span>
+            <span className="block text-[15px]">{t.form.visible}</span>
             <span className="mt-1 block text-sm text-ink-3">
-              Si está apagado, tu socio no ve el nombre del hábito, aunque sí cuenta en tu % del día.
+              {t.form.visibleHint}
             </span>
           </span>
           <input
@@ -356,7 +359,7 @@ export function HabitForm({
       {error && <p className="border-l-2 border-ink pl-3 text-sm">{error}</p>}
 
       <button type="submit" disabled={saving} className="btn btn-primary w-full">
-        {saving ? "Guardando…" : initial ? "Guardar cambios" : "Crear hábito"}
+        {saving ? t.form.saving : initial ? t.form.saveChanges : t.form.create}
       </button>
     </form>
   );

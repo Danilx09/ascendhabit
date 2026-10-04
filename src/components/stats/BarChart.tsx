@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useT } from "@/lib/i18n/client";
 
 export interface BarDatum {
   key: string;
@@ -37,6 +38,7 @@ export function BarChart({
   labelEvery?: number;
   height?: number;
 }) {
+  const t = useT();
   const [selected, setSelected] = useState<string | null>(defaultKey ?? data[data.length - 1]?.key ?? null);
   const current = data.find((d) => d.key === selected);
 
@@ -99,7 +101,7 @@ export function BarChart({
       </div>
 
       <details className="mt-3">
-        <summary className="cursor-pointer text-xs text-ink-3 underline underline-offset-4">Ver tabla</summary>
+        <summary className="cursor-pointer text-xs text-ink-3 underline underline-offset-4">{t.stats.viewTable}</summary>
         <table className="mt-2 w-full text-left text-sm">
           <tbody className="divide-y divide-line">
             {data.map((d) => (

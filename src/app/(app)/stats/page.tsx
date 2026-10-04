@@ -1,17 +1,22 @@
-import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
-import { formatShortDate } from "@/lib/dates";
-import { streakLabel, WEEKDAYS } from "@/lib/habits";
+import { formatDayMonth, formatShortDate } from "@/lib/dates";
+import { streakLabel } from "@/lib/habits";
+import { getT } from "@/lib/i18n/server";
+import { pageTitle } from "@/lib/i18n/metadata";
 import { BarChart } from "@/components/stats/BarChart";
 import { HabitsTabs } from "@/components/habits/HabitsTabs";
 import type { StatsData } from "@/types/app";
 
-export const metadata: Metadata = { title: "Progreso · AscendHabit" };
+export const generateMetadata = pageTitle("stats");
 
 const WEEKS = 12;
 
 export default async function StatsPage() {
   const supabase = await createClient();
+  const t = await getT();
+  const sd = (d: string) => formatShortDate(d, t.intl);
+  const dm = (d: string) => formatDayMonth(d, t.intl);
+  const dayLong = (iso: number) => t.weekdays.long[iso - 1];
   const { data, error } = await supabase.rpc("get_stats", { p_weeks: WEEKS });
   if (error) throw new Error(error.message);
   const s = data as StatsData;
@@ -33,81 +38,81 @@ export default async function StatsPage() {
   const weekday = s.weekday.filter((d) => d.pct !== null);
   const best = weekday.length ? weekday.reduce((a, b) => (b.pct! > a.pct! ? b : a)) : null;
   const worst = weekday.length ? weekday.reduce((a, b) => (b.pct! < a.pct! ? b : a)) : null;
-  const dayName = (iso: number) => WEEKDAYS.find((w) => w.iso === iso)?.long.toLowerCase() ?? "";
+  const dayName = (iso: number) => (t.intl === "es" ? dayLong(iso).toLowerCase() : dayLong(iso));
   const hasMood = weekly.some((w) => w.avg_mood !== null);
 
   return (
     <div className="space-y-12">
       <header className="space-y-6">
         <div>
-          <p className="eyebrow">Últimas {WEEKS} semanas</p>
-          <h1 className="mt-2 font-serif text-4xl tracking-tight">Progreso</h1>
+          <p className="eyebrow">{t.stats.weeks(WEEKS)}</p>
+          <h1 className="mt-2 font-serif text-4xl tracking-tight">{t.stats.title}</h1>
         </div>
         <HabitsTabs active="stats" />
       </header>
 
       {weekly.length === 0 ? (
         <p className="border-y border-line py-10 text-center text-sm text-ink-3">
-          Aún no hay datos. Vuelve cuando lleves unos días registrando hábitos.
+          {t.stats.empty}
         </p>
       ) : (
         <>
           {/* Resumen */}
           <dl className="grid grid-cols-2 border-t border-line">
-            <Stat label="Esta semana" value={thisWeek?.pct === null || !thisWeek ? "–" : `${thisWeek.pct}%`} hint="en curso" />
+            <Stat label={t.stats.thisWeek} value={thisWeek?.pct === null || !thisWeek ? "–" : `${thisWeek.pct}%`} hint={t.stats.inProgress} />
             <Stat
-              label="Tendencia"
+              label={t.stats.trend}
               value={delta === null ? "–" : `${delta > 0 ? "↑ +" : delta < 0 ? "↓ " : ""}${delta} pts`}
-              hint={last4 === null ? "faltan semanas completas" : `${last4}% en las últimas 4 semanas`}
+              hint={last4 === null ? t.stats.noComplete : t.stats.trendHint(last4)}
               left
             />
             <Stat
-              label="Días perfectos · 30 d"
+              label={t.stats.perfect30}
               value={`${s.perfect_days_30d}`}
-              hint={`de ${s.active_days_30d} días con hábitos`}
+              hint={t.stats.ofDays(s.active_days_30d)}
             />
             <Stat
-              label="Día Perfecto"
-              value={streakLabel(s.perfect_day_streak, "days")}
-              hint={`mejor racha: ${s.perfect_day_best}`}
+              label={t.stats.perfectDay}
+              value={streakLabel(s.perfect_day_streak, "days", t)}
+              hint={t.stats.bestStreak(s.perfect_day_best)}
               left
             />
           </dl>
 
           <BarChart
-            title="Cumplimiento semanal"
+            title={t.stats.weekly}
             max={100}
             ticks={[50, 100]}
             formatTick={(n) => `${n}%`}
             labelEvery={3}
             data={weekly.map((w) => ({
               key: w.week_start,
-              label: formatShortDate(w.week_start).split(" ").slice(1).join(" "),
+              label: dm(w.week_start),
               value: w.pct,
               inProgress: w.is_current,
               readout:
                 w.pct === null
-                  ? `Semana del ${formatShortDate(w.week_start)} · sin hábitos`
-                  : `Semana del ${formatShortDate(w.week_start)} · ${w.pct}% (${w.done}/${w.scheduled})${w.is_current ? " · en curso" : ""}`,
+                  ? `${t.stats.weekOf(sd(w.week_start))} · ${t.stats.noHabits}`
+                  : `${t.stats.weekOf(sd(w.week_start))} · ${w.pct}% (${w.done}/${w.scheduled})${w.is_current ? ` · ${t.stats.inProgress}` : ""}`,
             }))}
           />
 
           {hasMood && (
             <BarChart
-              title="Energía media semanal · bitácora"
+              title={t.stats.energyTitle}
               max={5}
               ticks={[1, 3, 5]}
               labelEvery={3}
               height={120}
               data={weekly.map((w) => ({
                 key: w.week_start,
-                label: formatShortDate(w.week_start).split(" ").slice(1).join(" "),
+                label: dm(w.week_start),
                 value: w.avg_mood,
                 inProgress: w.is_current,
                 readout:
                   w.avg_mood === null
-                    ? `Semana del ${formatShortDate(w.week_start)} · sin registro`
-                    : `Semana del ${formatShortDate(w.week_start)} · energía ${String(w.avg_mood).replace(".", ",")} de 5 · ${w.journal_days} ${w.journal_days === 1 ? "día" : "días"} de diario`,
+                    ? `${t.stats.weekOf(sd(w.week_start))} · ${t.stats.noRecord}`
+                    : `${t.stats.weekOf(sd(w.week_start))} · ${t.stats.energyReadout(w.avg_mood.toLocaleString(t.intl), w.journal_days)}`,
               }))}
             />
           )}
@@ -115,7 +120,7 @@ export default async function StatsPage() {
           {weekday.length > 0 && (
             <section className="space-y-3">
               <BarChart
-                title="Por día de la semana"
+                title={t.stats.byWeekday}
                 max={100}
                 ticks={[50, 100]}
                 formatTick={(n) => `${n}%`}
@@ -123,18 +128,17 @@ export default async function StatsPage() {
                 defaultKey={best ? String(best.isodow) : undefined}
                 data={s.weekday.map((d) => ({
                   key: String(d.isodow),
-                  label: WEEKDAYS.find((w) => w.iso === d.isodow)?.short ?? "",
+                  label: t.weekdays.short[d.isodow - 1],
                   value: d.pct,
                   readout:
                     d.pct === null
-                      ? `${WEEKDAYS.find((w) => w.iso === d.isodow)?.long} · sin hábitos`
-                      : `${WEEKDAYS.find((w) => w.iso === d.isodow)?.long} · ${d.pct}% (${d.done}/${d.scheduled})`,
+                      ? `${dayLong(d.isodow)} · ${t.stats.noHabits}`
+                      : `${dayLong(d.isodow)} · ${d.pct}% (${d.done}/${d.scheduled})`,
                 }))}
               />
               {best && worst && best.isodow !== worst.isodow && (
                 <p className="text-sm text-ink-2">
-                  Tu mejor día es el <span className="text-ink">{dayName(best.isodow)}</span> ({best.pct}%); el más difícil, el{" "}
-                  <span className="text-ink">{dayName(worst.isodow)}</span> ({worst.pct}%).
+                  {t.stats.bestDay(dayName(best.isodow), best.pct!, dayName(worst.isodow), worst.pct!)}
                 </p>
               )}
             </section>
@@ -143,7 +147,7 @@ export default async function StatsPage() {
           {/* Por hábito: tabla con barra fina */}
           {s.habits.length > 0 && (
             <section>
-              <p className="eyebrow mb-1">Por hábito · 30 días</p>
+              <p className="eyebrow mb-1">{t.stats.byHabit}</p>
               <ul className="divide-y divide-line border-y border-line">
                 {s.habits.map((h) => (
                   <li key={h.id} className="py-3.5">
@@ -158,7 +162,7 @@ export default async function StatsPage() {
                       <div className="h-px bg-ink" style={{ width: `${h.rate_30d ?? 0}%` }} />
                     </div>
                     <p className="ml-8 mt-1.5 text-xs text-ink-3">
-                      Racha {streakLabel(h.current_streak, h.streak_unit)} · mejor {streakLabel(h.best_streak, h.streak_unit)}
+                      {t.stats.habitStreak(streakLabel(h.current_streak, h.streak_unit, t), streakLabel(h.best_streak, h.streak_unit, t))}
                     </p>
                   </li>
                 ))}

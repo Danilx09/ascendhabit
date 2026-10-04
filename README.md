@@ -205,6 +205,26 @@ Safari → `ascendhabit.vercel.app` → botón Compartir → **Añadir a pantall
 
 ---
 
+## Fase 8 · Español / English
+
+- **Selector de idioma** en Ajustes (y un enlace en la pantalla de entrada). Por defecto se usa el idioma del teléfono.
+- **Cómo funciona:** diccionarios en `src/lib/i18n/es.ts` y `en.ts`. El inglés está tipado contra el español, así que si falta o sobra una clave, no compila.
+  - En componentes de cliente: `const t = useT();` → `t.today.title`.
+  - En el servidor: `const t = await getT();`.
+  - Las fechas usan `t.intl` (`formatLongDate(fecha, t.intl)`).
+- **Errores de la base de datos:** las funciones SQL siguen lanzándolos en español; `translateDbError()` los traduce en la app.
+- **Plantillas y categorías** tienen `name_en`; el **correo de recordatorio** se escribe en el idioma guardado en el perfil.
+- Lo que escribe cada usuario (hábitos, diario, mensajes) no se traduce.
+
+### Configuración
+**SQL Editor** → ejecuta `supabase/migrations/20261007000001_i18n.sql`.
+
+### Añadir un texto nuevo
+1. Añádelo en `es.ts` → el compilador marcará `en.ts` hasta que lo añadas también.
+2. Úsalo con `t.seccion.clave`.
+
+---
+
 ## Estructura
 
 ```

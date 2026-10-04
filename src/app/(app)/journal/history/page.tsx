@@ -1,14 +1,16 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { JournalCalendar } from "@/components/journal/JournalCalendar";
+import { getT } from "@/lib/i18n/server";
+import { pageTitle } from "@/lib/i18n/metadata";
 import type { JournalDay, JournalMonthItem, JournalYearItem } from "@/types/app";
 
-export const metadata: Metadata = { title: "Historial del diario · AscendHabit" };
+export const generateMetadata = pageTitle("history");
 
 export default async function JournalHistoryPage({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
   const { month } = await searchParams;
   const supabase = await createClient();
+  const t = await getT();
 
   // "Hoy" en la zona horaria del usuario (lo calcula el servidor de base de datos)
   const { data: dayData, error: dayError } = await supabase.rpc("get_journal_day", { p_date: null });
@@ -31,12 +33,13 @@ export default async function JournalHistoryPage({ searchParams }: { searchParam
     <div className="space-y-10">
       <header>
         <Link href="/journal" className="text-sm text-ink-3">
-          ← Diario de hoy
+          {t.history.back}
         </Link>
-        <h1 className="mt-4 font-serif text-4xl tracking-tight">Historial</h1>
-        <p className="mt-2 text-sm text-ink-2">Toca cualquier día para leerlo o escribir sobre él.</p>
+        <h1 className="mt-4 font-serif text-4xl tracking-tight">{t.history.title}</h1>
+        <p className="mt-2 text-sm text-ink-2">{t.history.hint}</p>
       </header>
       <JournalCalendar
+        t={t}
         today={today}
         monthStart={monthStart}
         entries={(monthRes.data ?? []) as JournalMonthItem[]}

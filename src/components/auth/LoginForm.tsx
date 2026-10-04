@@ -3,11 +3,13 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useT } from "@/lib/i18n/client";
 
 const RESEND_SECONDS = 60;
 
 export function LoginForm({ initialError }: { initialError: string | null }) {
   const router = useRouter();
+  const t = useT();
   const [supabase] = useState(() => createClient());
   const [step, setStep] = useState<"email" | "code">("email");
   const [email, setEmail] = useState("");
@@ -34,7 +36,7 @@ export function LoginForm({ initialError }: { initialError: string | null }) {
     if (error) {
       setError(
         error.status === 429
-          ? "Demasiados intentos. Espera unos minutos antes de pedir otro código."
+          ? t.login.tooMany
           : error.message,
       );
       return;
@@ -55,7 +57,7 @@ export function LoginForm({ initialError }: { initialError: string | null }) {
     });
     if (error) {
       setLoading(false);
-      setError("Código incorrecto o expirado.");
+      setError(t.login.wrongCode);
       return;
     }
     router.replace("/today");
@@ -69,14 +71,14 @@ export function LoginForm({ initialError }: { initialError: string | null }) {
     return (
       <form onSubmit={sendCode} className="space-y-6">
         <label className="block">
-          <span className="eyebrow">Tu email</span>
+          <span className="eyebrow">{t.login.email}</span>
           <input
             type="email"
             required
             autoFocus
             autoComplete="email"
             inputMode="email"
-            placeholder="tu@email.com"
+            placeholder={t.login.emailPh}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className={inputClass}
@@ -84,11 +86,9 @@ export function LoginForm({ initialError }: { initialError: string | null }) {
         </label>
         {error && <p className="border-l-2 border-ink pl-3 text-sm">{error}</p>}
         <button type="submit" disabled={loading || !email} className={buttonClass}>
-          {loading ? "Enviando…" : "Enviarme un código"}
+          {loading ? t.common.sending : t.login.send}
         </button>
-        <p className="text-center text-xs text-ink-3">
-          Sin contraseñas. Si es tu primera vez, se crea tu cuenta.
-        </p>
+        <p className="text-center text-xs text-ink-3">{t.login.noPasswords}</p>
       </form>
     );
   }
@@ -96,8 +96,7 @@ export function LoginForm({ initialError }: { initialError: string | null }) {
   return (
     <form onSubmit={verifyCode} className="space-y-6">
       <p className="text-sm text-ink-2">
-        Enviamos un código a <span className="text-ink">{email}</span>.
-        Revisa también la carpeta de spam.
+        {t.login.sentTo} <span className="text-ink">{email}</span>. {t.login.checkSpam}
       </p>
       <input
         type="text"
@@ -114,7 +113,7 @@ export function LoginForm({ initialError }: { initialError: string | null }) {
       />
       {error && <p className="border-l-2 border-ink pl-3 text-sm">{error}</p>}
       <button type="submit" disabled={loading || code.length < 6} className={buttonClass}>
-        {loading ? "Verificando…" : "Entrar"}
+        {loading ? t.login.verifying : t.login.enter}
       </button>
       <div className="flex justify-between text-sm">
         <button
@@ -125,7 +124,7 @@ export function LoginForm({ initialError }: { initialError: string | null }) {
           }}
           className="text-ink-3"
         >
-          ← Cambiar email
+          {t.login.changeEmail}
         </button>
         <button
           type="button"
@@ -133,7 +132,7 @@ export function LoginForm({ initialError }: { initialError: string | null }) {
           onClick={() => sendCode()}
           className="underline underline-offset-4 disabled:text-ink-3 disabled:no-underline"
         >
-          {cooldown > 0 ? `Reenviar en ${cooldown}s` : "Reenviar código"}
+          {cooldown > 0 ? t.login.resendIn(cooldown) : t.login.resend}
         </button>
       </div>
     </form>

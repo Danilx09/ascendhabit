@@ -5,19 +5,20 @@ import { useEffect, useOptimistic, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { formatLongDate, greeting } from "@/lib/dates";
-import { TIME_OF_DAY_LABEL, withValue } from "@/lib/habits";
+import { TIME_SLOTS, withValue } from "@/lib/habits";
+import { translateDbError } from "@/lib/i18n";
+import { useT } from "@/lib/i18n/client";
 import { HabitCard } from "./HabitCard";
 import { ProgressSheet } from "./ProgressSheet";
 import { RecoveryBanner } from "./RecoveryBanner";
 import { useRefreshOnFocus } from "@/hooks/useRefreshOnFocus";
-import type { RecoverableMiss, TimeOfDay, TodayData, TodayHabit } from "@/types/app";
-
-const SECTION_ORDER: TimeOfDay[] = ["morning", "afternoon", "evening", "anytime"];
+import type { RecoverableMiss, TodayData, TodayHabit } from "@/types/app";
 
 type Update = { id: string; value: number };
 
 export function TodayView({ data, misses }: { data: TodayData; misses: RecoverableMiss[] }) {
   const router = useRouter();
+  const t = useT();
   useRefreshOnFocus();
   const [supabase] = useState(() => createClient());
   const [, startTransition] = useTransition();
@@ -28,15 +29,15 @@ export function TodayView({ data, misses }: { data: TodayData; misses: Recoverab
   const [sheetId, setSheetId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   // El saludo depende de la hora local: se calcula en el navegador
-  const [hello, setHello] = useState("Hola");
-  useEffect(() => setHello(greeting()), []);
+  const [hello, setHello] = useState(t.greet.hello);
+  useEffect(() => setHello(greeting(t)), [t]);
 
   function setValue(id: string, value: number) {
     setError(null);
     startTransition(async () => {
       applyOptimistic({ id, value });
       const { error } = await supabase.rpc("log_habit", { p_habit_id: id, p_value: value });
-      if (error) setError(error.message);
+      if (error) setError(translateDbError(error.message, t));
       router.refresh();
     });
   }
@@ -55,7 +56,7 @@ export function TodayView({ data, misses }: { data: TodayData; misses: Recoverab
     <div className="space-y-10">
       {/* Cabecera editorial */}
       <header>
-        <p className="eyebrow">{formatLongDate(data.today)}</p>
+        <p className="eyebrow">{formatLongDate(data.today, t.intl)}</p>
         <h1 className="mt-3 font-serif text-[2.1rem] leading-[1.1] tracking-tight">
           {hello}
           {data.display_name ? `, ${data.display_name}` : ""}.
@@ -63,11 +64,11 @@ export function TodayView({ data, misses }: { data: TodayData; misses: Recoverab
         <p className="mt-2 text-ink-2">
           {daily.length === 0
             ? habits.length === 0
-              ? "Empieza creando tu primer hábito."
-              : "Hoy no tienes hábitos con día fijo."
+              ? t.today.noHabits
+              : t.today.noFixed
             : allDone
-              ? "Día perfecto. Todo hecho."
-              : `${left === 1 ? "Queda 1 hábito" : `Quedan ${left} hábitos`} por hoy.`}
+              ? t.today.perfect
+              : t.today.left(left)}
         </p>
 
         {daily.length > 0 && (
@@ -75,12 +76,10 @@ export function TodayView({ data, misses }: { data: TodayData; misses: Recoverab
             <div className="flex items-end justify-between">
               <span className="font-serif text-5xl leading-none tabular-nums">{pct}%</span>
               <span className="text-right text-sm text-ink-2">
-                Día Perfecto
+                {t.today.perfectDay}
                 <br />
-                <span className="text-ink">
-                  {data.perfect_day_streak} {data.perfect_day_streak === 1 ? "día" : "días"}
-                </span>
-                <span className="text-ink-3"> · mejor {data.perfect_day_best}</span>
+                <span className="text-ink">{t.units.days(data.perfect_day_streak)}</span>
+                <span className="text-ink-3"> · {t.today.best(data.perfect_day_best)}</span>
               </span>
             </div>
             <div className="mt-4 h-px w-full bg-line">
@@ -93,12 +92,8 @@ export function TodayView({ data, misses }: { data: TodayData; misses: Recoverab
       {data.pending_recovery_requests > 0 && (
         <Link href="/partner" className="flex items-center justify-between border border-ink px-4 py-3">
           <span className="text-sm">
-            <span className="block font-medium">Tu socio necesita tu respuesta</span>
-            <span className="text-ink-2">
-              {data.pending_recovery_requests === 1
-                ? "1 solicitud de rescate pendiente"
-                : `${data.pending_recovery_requests} solicitudes de rescate pendientes`}
-            </span>
+            <span className="block font-medium">{t.today.partnerNeeds}</span>
+            <span className="text-ink-2">{t.today.pendingRequests(data.pending_recovery_requests)}</span>
           </span>
           <span aria-hidden>→</span>
         </Link>
@@ -110,20 +105,20 @@ export function TodayView({ data, misses }: { data: TodayData; misses: Recoverab
 
       {habits.length === 0 && (
         <div className="border-y border-line py-12 text-center">
-          <p className="font-serif text-2xl italic">Una página en blanco.</p>
-          <p className="mt-2 text-sm text-ink-2">Empieza con una plantilla o crea un hábito a tu medida.</p>
+          <p className="font-serif text-2xl italic">{t.today.blankTitle}</p>
+          <p className="mt-2 text-sm text-ink-2">{t.today.blankBody}</p>
           <Link href="/habits/new" className="btn btn-primary mt-6">
-            Crear hábito
+            {t.today.createHabit}
           </Link>
         </div>
       )}
 
-      {SECTION_ORDER.map((slot) => {
+      {TIME_SLOTS.map((slot) => {
         const items = active.filter((h) => h.time_of_day === slot);
         if (items.length === 0) return null;
         return (
           <section key={slot}>
-            <h2 className="eyebrow mb-1">{TIME_OF_DAY_LABEL[slot]}</h2>
+            <h2 className="eyebrow mb-1">{t.time[slot]}</h2>
             <ul className="divide-y divide-line border-y border-line">
               {items.map((h) => (
                 <li key={h.id}>
@@ -138,7 +133,7 @@ export function TodayView({ data, misses }: { data: TodayData; misses: Recoverab
       {notToday.length > 0 && (
         <details className="group">
           <summary className="eyebrow cursor-pointer list-none">
-            Hoy no toca ({notToday.length}) <span className="inline-block transition group-open:rotate-90">›</span>
+            {t.today.notToday(notToday.length)} <span className="inline-block transition group-open:rotate-90">›</span>
           </summary>
           <ul className="mt-1 divide-y divide-line border-y border-line opacity-50">
             {notToday.map((h) => (

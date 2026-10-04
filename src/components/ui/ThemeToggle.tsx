@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useT } from "@/lib/i18n/client";
 
 export type ThemePref = "light" | "dark" | "system";
 
@@ -66,13 +67,14 @@ export function useTheme() {
 /** Botón compacto Día/Noche para la cabecera */
 export function ThemeToggle() {
   const { resolved, choose } = useTheme();
+  const t = useT();
   const next = resolved === "dark" ? "light" : "dark";
 
   return (
     <button
       type="button"
       onClick={() => choose(next)}
-      aria-label={resolved === "dark" ? "Cambiar a modo normal" : "Cambiar a modo noche"}
+      aria-label={resolved === "dark" ? t.theme.toDay : t.theme.toNight}
       className="grid h-9 w-9 place-items-center rounded-full text-ink-2 transition hover:text-ink"
     >
       {resolved === "dark" ? (
@@ -92,10 +94,11 @@ export function ThemeToggle() {
 /** Selector completo para Ajustes */
 export function ThemeSelector() {
   const { pref, choose } = useTheme();
+  const t = useT();
   const options: { value: ThemePref; label: string }[] = [
-    { value: "light", label: "Normal" },
-    { value: "dark", label: "Noche" },
-    { value: "system", label: "Sistema" },
+    { value: "light", label: t.theme.light },
+    { value: "dark", label: t.theme.dark },
+    { value: "system", label: t.theme.system },
   ];
   return (
     <div className="grid grid-cols-3 border border-line">

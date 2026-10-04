@@ -4,9 +4,12 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { translateDbError } from "@/lib/i18n";
+import { useT } from "@/lib/i18n/client";
 
 export function HabitActions({ habitId, archived }: { habitId: string; archived: boolean }) {
   const router = useRouter();
+  const t = useT();
   const [supabase] = useState(() => createClient());
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -17,7 +20,7 @@ export function HabitActions({ habitId, archived }: { habitId: string; archived:
     setError(null);
     const { error } = await supabase.rpc("set_habit_archived", { p_habit_id: habitId, p_archived: !archived });
     setBusy(false);
-    if (error) return setError(error.message);
+    if (error) return setError(translateDbError(error.message, t));
     router.refresh();
   }
 
@@ -27,7 +30,7 @@ export function HabitActions({ habitId, archived }: { habitId: string; archived:
     const { error } = await supabase.from("habits").delete().eq("id", habitId);
     if (error) {
       setBusy(false);
-      return setError(error.message);
+      return setError(translateDbError(error.message, t));
     }
     router.replace("/habits");
     router.refresh();
@@ -37,15 +40,15 @@ export function HabitActions({ habitId, archived }: { habitId: string; archived:
     <section className="space-y-3 border-t border-line pt-8">
       {!archived && (
         <Link href={`/habits/${habitId}/edit`} className="btn btn-primary w-full">
-          Editar hábito
+          {t.detail.edit}
         </Link>
       )}
       <button type="button" onClick={toggleArchive} disabled={busy} className="btn btn-ghost w-full">
-        {archived ? "Restaurar · empieza de nuevo hoy" : "Archivar"}
+        {archived ? t.detail.restore : t.detail.archive}
       </button>
       {!archived && (
         <p className="text-center text-xs text-ink-3">
-          Archivar lo saca de Hoy sin perder el historial. Al restaurarlo, la racha empieza ese día.
+          {t.detail.archiveHint}
         </p>
       )}
 
@@ -55,17 +58,17 @@ export function HabitActions({ habitId, archived }: { habitId: string; archived:
           onClick={() => setConfirmDelete(true)}
           className="block w-full pt-4 text-center text-sm text-ink-3 underline underline-offset-4"
         >
-          Eliminar hábito
+          {t.detail.deleteHabit}
         </button>
       ) : (
         <div className="border border-ink p-4">
-          <p className="text-sm">Se borrarán el hábito, todo su historial y sus rescates. No se puede deshacer.</p>
+          <p className="text-sm">{t.detail.deleteWarn}</p>
           <div className="mt-4 grid grid-cols-2 gap-3">
             <button type="button" onClick={() => setConfirmDelete(false)} className="btn btn-ghost">
-              Cancelar
+              {t.common.cancel}
             </button>
             <button type="button" onClick={remove} disabled={busy} className="btn btn-primary">
-              Eliminar
+              {t.detail.deleteConfirm}
             </button>
           </div>
         </div>

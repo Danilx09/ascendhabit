@@ -1,13 +1,15 @@
-import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { ConnectPartner } from "@/components/partner/ConnectPartner";
 import { PartnerView } from "@/components/partner/PartnerView";
+import { getT } from "@/lib/i18n/server";
+import { pageTitle } from "@/lib/i18n/metadata";
 import type { PartnerInfo, RecoveryRequest, UserSummary } from "@/types/app";
 
-export const metadata: Metadata = { title: "Socio · AscendHabit" };
+export const generateMetadata = pageTitle("partner");
 
 export default async function PartnerPage() {
   const supabase = await createClient();
+  const t = await getT();
   const { data: info, error } = await supabase.rpc("get_partner_info");
   if (error) throw new Error(error.message);
   const partnerInfo = info as PartnerInfo;
@@ -16,8 +18,8 @@ export default async function PartnerPage() {
     return (
       <div className="space-y-8">
         <header>
-          <p className="eyebrow">Accountability</p>
-          <h1 className="mt-2 font-serif text-4xl tracking-tight">Socio</h1>
+          <p className="eyebrow">{t.partner.eyebrow}</p>
+          <h1 className="mt-2 font-serif text-4xl tracking-tight">{t.partner.title}</h1>
         </header>
         <ConnectPartner inviteCode={partnerInfo.invite_code} />
       </div>
